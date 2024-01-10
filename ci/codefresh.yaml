@@ -13,7 +13,7 @@ steps:
     arguments:
       repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
       revision: ${{CF_BRANCH}}
-      git: codefresh-github-app
+      git: codefresh-support-bot
       depth: 1
 
   build:
@@ -30,7 +30,7 @@ steps:
     stage: Release
     type: github-release
     arguments:
-      git_context_name: cf-support-bot
+      git_context_name: codefresh-support-bot
       release_name: ${{VERSION}}
       release_description: ${{CF_COMMIT_MESSAGE}}
       release_tag: ${{VERSION}}
