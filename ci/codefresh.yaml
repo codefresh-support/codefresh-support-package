@@ -30,12 +30,12 @@ steps:
     stage: Release
     type: github-release
     arguments:
-      git_context_name: codefresh-github-app
-      release_name: '${{VERSION}}'
+      git_context_name: cf-support-bot
+      release_name: ${{VERSION}}
       release_description: ${{CF_COMMIT_MESSAGE}}
       release_tag: ${{VERSION}}
       files:
-        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_linux_x86_64'
-        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_windows_x86_64.exe'
-        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_darwin_x86_64'
-        - '${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_darwin_arm64'
+        - ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_linux_x86_64
+        - ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_windows_x86_64.exe
+        - ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_darwin_x86_64
+        - ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/bin/cf-transfer_darwin_arm64
