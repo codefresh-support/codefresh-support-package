@@ -1,12 +1,13 @@
 'use strict';
 
 import { Codefresh } from './codefresh.js';
-import { autoDetectClient } from 'https://deno.land/x/kubernetes_client@v0.7.0/mod.ts';
+import { autoDetectClient } from 'https://deno.land/x/kubernetes_client@v0.7.2/mod.ts';
 import { BatchV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/batch@v1/mod.ts';
 import { CoreV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/core@v1/mod.ts';
 import { StorageV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/storage.k8s.io@v1/mod.ts';
 import { ArgoprojIoV1alpha1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/argo-cd/argoproj.io@v1alpha1/mod.ts';
 import { compress } from 'https://deno.land/x/zip@v1.2.5/mod.ts';
+import { stringify as toYaml } from 'https://deno.land/std@0.211.0/yaml/mod.ts';
 
 console.log('Initializing \n');
 const kubeConfig = await autoDetectClient();
@@ -20,7 +21,7 @@ const dirPath = `./codefresh-support-${timestamp}`;
 async function saveItems(resources, dir) {
   await Deno.mkdir(`${dirPath}/${dir}/`, { recursive: true });
   return Promise.all(resources.map((item) => {
-    return Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.json`, JSON.stringify(item, null, 2));
+    return Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.yaml`, toYaml(item, {skipInvalid: true}));
   }));
 }
 
@@ -64,7 +65,7 @@ async function gatherClassic() {
     }
   }
 
-  Deno.writeTextFile(`${dirPath}/runtimeSpec.json`, JSON.stringify(reSpec, null, 2));
+  Deno.writeTextFile(`${dirPath}/runtimeSpec.yaml`, toYaml(reSpec, {skipInvalid: true}));
 }
 
 async function gatherGitOps() {
