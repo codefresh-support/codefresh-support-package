@@ -13,6 +13,6 @@ This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS 
 
 ## Usage
 
-1. Download the latest release of the tool for your platform.
+1. Download the [latest release](https://github.com/codefresh-support/codefresh-support-package/releases) of the tool for your platform.
 1. Execute the file via the CLI and follow the prompts.
 1. Redact any sensitive contents and upload the package to the support ticket.
