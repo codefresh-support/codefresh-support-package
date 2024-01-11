@@ -1,5 +1,5 @@
 'use strict';
-import { parse } from 'https://deno.land/std@0.208.0/yaml/mod.ts';
+import { parse } from 'https://deno.land/std@0.211.0/yaml/mod.ts';
 
 class Codefresh {
   async init() {
