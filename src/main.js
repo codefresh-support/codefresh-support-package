@@ -18,10 +18,19 @@ const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
 
+function selectRuntimeType() {
+  const reTypes = ['classic', 'gitops', 'onprem'];
+  reTypes.forEach((reType, index) => {
+    console.log(`${index + 1}. ${reType}`);
+  });
+  const typeSelected = prompt('\nWhich Type Of Runtime Are We Using? (Number):');
+  return reTypes[typeSelected - 1];
+}
+
 async function saveItems(resources, dir) {
   await Deno.mkdir(`${dirPath}/${dir}/`, { recursive: true });
   return Promise.all(resources.map((item) => {
-    return Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.yaml`, toYaml(item, {skipInvalid: true}));
+    return Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.yaml`, toYaml(item, { skipInvalid: true }));
   }));
 }
 
@@ -65,7 +74,7 @@ async function gatherClassic() {
     }
   }
 
-  Deno.writeTextFile(`${dirPath}/runtimeSpec.yaml`, toYaml(reSpec, {skipInvalid: true}));
+  Deno.writeTextFile(`${dirPath}/runtimeSpec.yaml`, toYaml(reSpec, { skipInvalid: true }));
 }
 
 async function gatherGitOps() {
@@ -112,13 +121,54 @@ async function gatherGitOps() {
   }
 }
 
-function selectRuntimeType() {
-  const reTypes = ['classic', 'gitops'];
-  reTypes.forEach((reType, index) => {
-    console.log(`${index + 1}. ${reType}`);
+async function gatherOnPrem() {
+  const cf = new Codefresh();
+  await cf.init();
+  const accounts = await cf.getOnPremAccounts();
+  const runtimes = await cf.getOnPremRuntimes();
+
+  const namespaceList = await coreApi.getNamespaceList();
+  console.log('');
+  namespaceList.items.forEach((ns, index) => {
+    console.log(`${index + 1}. ${ns.metadata.name}`);
   });
-  const typeSelected = prompt('\nWhich Type Of Runtime Are We Using? (Number):');
-  return reTypes[typeSelected - 1];
+  const selection = prompt('\nWhich Namespace Is Codefresh OnPrem Installed In? (Number): ');
+  const namespace = namespaceList.items[selection - 1].metadata.name;
+
+  console.log(`\nGathering Data For On Prem.`);
+
+  const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
+  const output = await helmList.output().stdout;
+  const helmReleases = JSON.parse(new TextDecoder().decode(output));
+
+  const dataFetchers = {
+    'Deployments': () => coreApi.namespace(namespace).getDeploymentList(),
+    'Daemonsets': () => coreApi.namespace(namespace).getDaemonSetList(),
+    'Nodes': () => coreApi.getNodeList(),
+    'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
+    'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+    'Services': () => coreApi.namespace(namespace).getServiceList(),
+    'Pods': () => coreApi.namespace(namespace).getPodList(),
+    'Events': () => coreApi.namespace(namespace).getEventList(),
+    'Storageclass': () => storageApi.getStorageClassList(),
+  };
+
+  for (const [dir, fetcher] of Object.entries(dataFetchers)) {
+    const resources = await fetcher();
+    if (dir === 'Pods') {
+      await saveItems(resources.items, dir);
+      await Promise.all(resources.items.map(async (item) => {
+        const log = await coreApi.namespace(namespace).getPodLog(item.metadata.name, { container: item.spec.containers[0].name });
+        return Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.log`, log);
+      }));
+    } else {
+      await saveItems(resources.items, dir);
+    }
+  }
+
+  Deno.writeTextFile(`${dirPath}/onPremReleases.yaml`, toYaml(helmReleases, { skipInvalid: true }));
+  Deno.writeTextFile(`${dirPath}/onPremAccounts.yaml`, toYaml(accounts, { skipInvalid: true }));
+  Deno.writeTextFile(`${dirPath}/onPremRuntimes.yaml`, toYaml(runtimes, { skipInvalid: true }));
 }
 
 async function main() {
@@ -130,6 +180,9 @@ async function main() {
       break;
     case 'gitops':
       await gatherGitOps();
+      break;
+    case 'onprem':
+      await gatherOnPrem();
       break;
     default:
       console.log('Invalid runtime type selected');
