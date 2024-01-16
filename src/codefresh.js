@@ -45,12 +45,31 @@ class Codefresh {
     }
   }
 
-  getRuntimeInfo(name) {
+  async getOnPremAccounts() {
     try {
-      const runtime = this.runtimes.find((re) => re.metadata.name === name);
-      return runtime;
+      const response = await fetch(`${this.baseURL}/admin/accounts`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      const accounts = await response.json();
+      return accounts;
     } catch (error) {
       console.error(error);
+      return error;
+    }
+  }
+
+  async getOnPremRuntimes() {
+    try {
+      const response = await fetch(`${this.baseURL}/admin/runtime-environments`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      const onPremRuntimes = await response.json();
+      return onPremRuntimes;
+    } catch (error) {
+      console.error(error);
+      return error;
     }
   }
 }
