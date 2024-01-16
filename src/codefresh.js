@@ -55,6 +55,7 @@ class Codefresh {
       return accounts;
     } catch (error) {
       console.error(error);
+      return error;
     }
   }
 
@@ -68,6 +69,7 @@ class Codefresh {
       return onPremRuntimes;
     } catch (error) {
       console.error(error);
+      return error;
     }
   }
 }

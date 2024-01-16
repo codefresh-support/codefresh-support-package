@@ -2,6 +2,7 @@
 
 import { Codefresh } from './codefresh.js';
 import { autoDetectClient } from 'https://deno.land/x/kubernetes_client@v0.7.2/mod.ts';
+import { AppsV1Api } from "https://deno.land/x/kubernetes_apis@v0.5.0/builtin/apps@v1/mod.ts";
 import { BatchV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/batch@v1/mod.ts';
 import { CoreV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/core@v1/mod.ts';
 import { StorageV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/storage.k8s.io@v1/mod.ts';
@@ -11,6 +12,7 @@ import { stringify as toYaml } from 'https://deno.land/std@0.211.0/yaml/mod.ts';
 
 console.log('Initializing \n');
 const kubeConfig = await autoDetectClient();
+const appsApi = new AppsV1Api(kubeConfig);
 const coreApi = new CoreV1Api(kubeConfig);
 const storageApi = new StorageV1Api(kubeConfig);
 const batchApi = new BatchV1Api(kubeConfig);
@@ -48,6 +50,10 @@ async function gatherClassic() {
 
   console.log(`\nGathering Data For ${reSpec.metadata.name}.`);
 
+  const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
+  const output = await helmList.output();
+  const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
+
   const dataFetchers = {
     'Cron': () => batchApi.namespace(namespace).getCronJobList(),
     'Jobs': () => batchApi.namespace(namespace).getJobList(),
@@ -75,6 +81,7 @@ async function gatherClassic() {
   }
 
   Deno.writeTextFile(`${dirPath}/runtimeSpec.yaml`, toYaml(reSpec, { skipInvalid: true }));
+  Deno.writeTextFile(`${dirPath}/classicReleases.yaml`, toYaml(helmReleases, { skipInvalid: true }));
 }
 
 async function gatherGitOps() {
@@ -98,6 +105,10 @@ async function gatherGitOps() {
 
   console.log(`\nGathering Data In ${namespace} For The GitOps Runtime.`);
 
+  const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
+  const output = await helmList.output();
+  const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
+
   const dataFetchers = {
     'Apps': () => argoProj.namespace(namespace).getApplicationList(),
     'Nodes': () => coreApi.getNodeList(),
@@ -119,6 +130,8 @@ async function gatherGitOps() {
       await saveItems(resources.items, dir);
     }
   }
+
+  Deno.writeTextFile(`${dirPath}/gitopsReleases.yaml`, toYaml(helmReleases, { skipInvalid: true }));
 }
 
 async function gatherOnPrem() {
@@ -138,12 +151,12 @@ async function gatherOnPrem() {
   console.log(`\nGathering Data For On Prem.`);
 
   const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
-  const output = await helmList.output().stdout;
-  const helmReleases = JSON.parse(new TextDecoder().decode(output));
+  const output = await helmList.output();
+  const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
 
   const dataFetchers = {
-    'Deployments': () => coreApi.namespace(namespace).getDeploymentList(),
-    'Daemonsets': () => coreApi.namespace(namespace).getDaemonSetList(),
+    'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+    'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
     'Nodes': () => coreApi.getNodeList(),
     'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
     'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
