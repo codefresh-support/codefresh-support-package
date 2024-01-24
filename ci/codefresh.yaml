@@ -27,7 +27,7 @@ steps:
         - apk add zip
         - zip ./bin/cf-support_windows_x86_64 ./bin/cf-support_windows_x86_64.exe
         - tar -czvf ./bin/cf-support_darwin_x86_64.tar.gz ./bin/cf-support_darwin_x86_64
-        - tar -czvf ./bin/cf-support_darwin_arm64.tar.gz ./bin/ccf-support_darwin_arm64
+        - tar -czvf ./bin/cf-support_darwin_arm64.tar.gz ./bin/cf-support_darwin_arm64
         - tar -czvf ./bin/cf-support_linux_x86_64.tar.gz ./bin/cf-support_linux_x86_64
 
   github_release:
