@@ -28,7 +28,7 @@ This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS 
 VERSION=$(curl --silent "https://api.github.com/repos/codefresh-support/codefresh-support-package/releases/latest" | jq -r ".tag_name")
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_arm64.tar.gz | tar zx -O cf-support
+curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_arm64.tar.gz | tar zx -O > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -44,7 +44,7 @@ chmod +x cf-support
 VERSION=$(curl --silent "https://api.github.com/repos/codefresh-support/codefresh-support-package/releases/latest" | jq -r ".tag_name")
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_x86_64.tar.gz | tar zx -O cf-support
+curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_x86_64.tar.gz | tar zx -O > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -60,7 +60,7 @@ chmod +x cf-support
 VERSION=$(curl --silent "https://api.github.com/repos/codefresh-support/codefresh-support-package/releases/latest" | jq -r ".tag_name")
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_linux_x86_64.tar.gz | tar zx -O cf-support
+curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_linux_x86_64.tar.gz | tar zx -O > cf-support
 
 # set execution to binary
 chmod +x cf-support
