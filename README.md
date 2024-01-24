@@ -71,6 +71,6 @@ chmod +x cf-support
 
 ### Windows - x86_64
 
-1. Go the the [Latest](https://api.github.com/repos/codefresh-support/codefresh-support-package/releases/latest) release.
+1. Go the the [Latest](https://github.com/codefresh-support/codefresh-support-package/releases/latest) release.
 1. Download the cf-support_windows_x86_64.zip file
 1. Run the `.exe` file via CMD or PowerShell
