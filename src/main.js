@@ -171,16 +171,6 @@ async function gatherGitOps() {
 
     const namespace = namespaceList.items[selection - 1].metadata.name;
 
-    const apps = await argoProj.namespace(namespace).getApplicationList();
-    const isCodfresh = apps.items.some((app) => ['codefresh.io/entity'] in app.metadata.labels);
-
-    if (!isCodfresh) {
-      const continueData = confirm(`\nCould not find a GitOps Runtime in ${namespace}. Do you still want to continue?`);
-      if (!continueData) {
-        Deno.exit();
-      }
-    }
-
     console.log(`\nGathering Data In ${namespace} For The GitOps Runtime.`);
 
     await fetchAndSaveData('gitops', namespace);
