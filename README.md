@@ -1,6 +1,8 @@
 # Codefresh Support Package
 
-This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS platform, and Hybrid Runtimes and OnPrem isntallation on the OnPrem Platform. It collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events.  For Classic and OnPrem we gather some informtion from the platform itself.
+This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS platform, and Hybrid Runtimes and OnPrem isntallation on the OnPrem Platform. It
+collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events. For Classic and OnPrem we gather some informtion
+from the platform itself.
 
 ## Prereqs
 
