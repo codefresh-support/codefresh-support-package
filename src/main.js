@@ -38,16 +38,34 @@ function selectRuntimeType() {
 async function saveItems(resources, dir) {
   try {
     await Deno.mkdir(`${dirPath}/${dir}/`, { recursive: true });
-
     const writePromises = resources.map(async (item) => {
-      const filePath = `${dirPath}/${dir}/${item.metadata.name}.yaml`;
+      const filePath = `${dirPath}/${dir}/${item.metadata.name}_get.yaml`;
       const fileContent = toYaml(item, { skipInvalid: true });
       await Deno.writeTextFile(filePath, fileContent);
     });
-
     await Promise.all(writePromises);
   } catch (error) {
     console.error(`Error saving items to ${dir}:`, error);
+  }
+}
+
+async function describeItems(dir, namespace, name) {
+  try {
+    const describe = new Deno.Command('kubectl', { args: ['describe', dir.toLowerCase(), '-n', namespace, name] });
+    const output = await describe.output();
+    await Deno.writeTextFile(`${dirPath}/${dir}/${name}_describe.yaml`, new TextDecoder().decode(output.stdout));
+  } catch (error) {
+    console.error(`Failed to describe ${name}:`, error);
+  }
+}
+
+async function saveEvents(namespace) {
+  try {
+    const events = new Deno.Command('kubectl', { args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'] });
+    const output = await events.output();
+    await Deno.writeTextFile(`${dirPath}/Events.txt`, new TextDecoder().decode(output.stdout));
+  } catch (error) {
+    console.error(`Error saving events:`, error);
   }
 }
 
@@ -56,12 +74,11 @@ async function saveHelmReleases(type, namespace) {
     const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
     const output = await helmList.output();
     const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
-    await Deno.writeTextFile(`${dirPath}/${type}-helmReleases.yaml`, toYaml(helmReleases, { skipInvalid: true }));
+    await Deno.writeTextFile(`${dirPath}/${type}_helmReleases.yaml`, toYaml(helmReleases, { skipInvalid: true }));
   } catch (error) {
     console.error(`Error saving Helm releases for ${type}:`, error);
   }
 }
-
 
 function dataFetchers(type, namespace) {
   switch (type) {
@@ -75,7 +92,6 @@ function dataFetchers(type, namespace) {
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
         'Storageclass': () => storageApi.getStorageClassList(),
       };
     case 'gitops':
@@ -85,7 +101,6 @@ function dataFetchers(type, namespace) {
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
       };
     case 'onprem':
       return {
@@ -96,7 +111,6 @@ function dataFetchers(type, namespace) {
         'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
         'Storageclass': () => storageApi.getStorageClassList(),
       };
     default:
@@ -108,6 +122,7 @@ function dataFetchers(type, namespace) {
 async function fetchAndSaveData(type, namespace) {
   for (const [dir, fetcher] of Object.entries(dataFetchers(type, namespace))) {
     const resources = await fetcher();
+
     await saveItems(resources.items, dir);
 
     if (dir === 'Pods') {
@@ -116,14 +131,25 @@ async function fetchAndSaveData(type, namespace) {
         try {
           log = await coreApi.namespace(namespace).getPodLog(item.metadata.name, { container: item.spec.containers[0].name });
         } catch (error) {
-          console.error(`Failed to get logs for ${item.metadata.name}:`, error);
+          console.error(`Failed to get items for ${item.metadata.name}:`, error);
           log = error;
         }
-        await Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}.log`, log);
+        await Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}_log.log`, log);
+        await describeItems(dir, namespace, item.metadata.name);
+      }));
+    }
+
+    if (dir === 'Nodes') {
+      await Promise.all(resources.items.map(async (item) => {
+        await describeItems(dir, namespace, item.metadata.name);
       }));
     }
   }
   await saveHelmReleases(type, namespace);
+  await saveEvents(namespace);
+  const listPods = new Deno.Command('kubectl', { args: ['get', 'pods', '-n', namespace] });
+  const output = await listPods.output();
+  await Deno.writeTextFile(`${dirPath}/ListPods.txt`, new TextDecoder().decode(output.stdout));
 }
 
 async function gatherClassic() {
