@@ -97,6 +97,7 @@ function dataFetchers(type, namespace) {
     case 'gitops':
       return {
         'Apps': () => argoProj.namespace(namespace).getApplicationList(),
+        'AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
         'Nodes': () => coreApi.getNodeList(),
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
