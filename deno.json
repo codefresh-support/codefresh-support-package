@@ -7,10 +7,10 @@
   },
   "tasks": {
     "pre-compile": "rm -rf ./bin && mkdir ./bin",
-    "compile:linux": "deno compile --config=./deno.json --allow-env --allow-read --allow-write=./ --allow-net --allow-run --output=./bin/cf-support_linux_x86_64 --target=x86_64-unknown-linux-gnu ./src/main.js",
-    "compile:windows": "deno compile --config=./deno.json --allow-env --allow-read --allow-write=./ --allow-net --allow-run --output=./bin/cf-support_windows_x86_64 --target=x86_64-pc-windows-msvc ./src/main.js",
-    "compile:apple_x86_64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write=./ --allow-net --allow-run --output=./bin/cf-support_darwin_x86_64 --target=x86_64-apple-darwin ./src/main.js",
-    "compile:apple_arm64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write=./ --allow-net --allow-run --output=./bin/cf-support_darwin_arm64 --target=aarch64-apple-darwin ./src/main.js",
+    "compile:linux": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_linux_x86_64 --target=x86_64-unknown-linux-gnu ./src/main.js",
+    "compile:windows": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_windows_x86_64 --target=x86_64-pc-windows-msvc ./src/main.js",
+    "compile:apple_x86_64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_x86_64 --target=x86_64-apple-darwin ./src/main.js",
+    "compile:apple_arm64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_arm64 --target=aarch64-apple-darwin ./src/main.js",
     "compile": "deno task pre-compile && deno task compile:linux && deno task compile:windows && deno task compile:apple_x86_64 && deno task compile:apple_arm64"
   }
 }
