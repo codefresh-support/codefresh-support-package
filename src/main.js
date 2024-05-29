@@ -130,7 +130,10 @@ async function fetchAndSaveData(type, namespace) {
       await Promise.all(resources.items.map(async (item) => {
         let log;
         try {
-          log = await coreApi.namespace(namespace).getPodLog(item.metadata.name, { container: item.spec.containers[0].name });
+          log = await coreApi.namespace(namespace).getPodLog(item.metadata.name, {
+            container: item.spec.containers[0].name,
+            timestamps: true,
+          });
         } catch (error) {
           console.error(`Failed to get items for ${item.metadata.name}:`, error);
           log = error;
