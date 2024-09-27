@@ -3,14 +3,21 @@
     "indentWidth": 2,
     "lineWidth": 160,
     "singleQuote": true,
-    "semiColons": true
+    "semiColons": true,
+    "exclude": [".devcontainer/**"]
   },
   "tasks": {
     "pre-compile": "rm -rf ./bin && mkdir ./bin",
     "compile:linux": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_linux_x86_64 --target=x86_64-unknown-linux-gnu ./src/main.js",
     "compile:windows": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_windows_x86_64 --target=x86_64-pc-windows-msvc ./src/main.js",
-    "compile:apple_x86_64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_x86_64 --target=x86_64-apple-darwin ./src/main.js",
+    "compile:apple": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_x86_64 --target=x86_64-apple-darwin ./src/main.js",
     "compile:apple_arm64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_arm64 --target=aarch64-apple-darwin ./src/main.js",
-    "compile": "deno task pre-compile && deno task compile:linux && deno task compile:windows && deno task compile:apple_x86_64 && deno task compile:apple_arm64"
+    "compile": "deno task pre-compile && deno task compile:linux && deno task compile:windows && deno task compile:apple && deno task compile:apple_arm64"
+  },
+  "imports": {
+    "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.5.1",
+    "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.7.3",
+    "@fakoua/zip-ts": "jsr:@fakoua/zip-ts@^1.3.1",
+    "@std/yaml": "jsr:@std/yaml@^1.0.5"
   }
 }

@@ -1,14 +1,15 @@
 'use strict';
 
 import { Codefresh } from './codefresh.js';
-import { autoDetectClient } from 'https://deno.land/x/kubernetes_client@v0.7.2/mod.ts';
-import { AppsV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/apps@v1/mod.ts';
-import { BatchV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/batch@v1/mod.ts';
-import { CoreV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/core@v1/mod.ts';
-import { StorageV1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/builtin/storage.k8s.io@v1/mod.ts';
-import { ArgoprojIoV1alpha1Api } from 'https://deno.land/x/kubernetes_apis@v0.5.0/argo-cd/argoproj.io@v1alpha1/mod.ts';
-import { compress } from 'https://deno.land/x/zip@v1.2.5/mod.ts';
-import { stringify as toYaml } from 'https://deno.land/std@0.211.0/yaml/mod.ts';
+import { autoDetectClient } from '@cloudydeno/kubernetes-client';
+import { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
+import { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
+import { CoreV1Api } from '@cloudydeno/kubernetes-apis/core/v1';
+import { StorageV1Api } from '@cloudydeno/kubernetes-apis/storage.k8s.io/v1';
+import { ArgoprojIoV1alpha1Api } from '@cloudydeno/kubernetes-apis/argoproj.io/v1alpha1';
+
+import { compress } from '@fakoua/zip-ts';
+import { stringify as toYaml } from '@std/yaml';
 
 console.log('Initializing \n');
 const kubeConfig = await autoDetectClient();
@@ -21,7 +22,7 @@ const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
 
 function selectRuntimeType() {
-  const reTypes = ['classic', 'gitops', 'onprem'];
+  const reTypes = ['Pipelines Runtime', 'GitOps Runtime', 'On-Prem'];
   reTypes.forEach((reType, index) => {
     console.log(`${index + 1}. ${reType}`);
   });
@@ -82,10 +83,12 @@ async function saveHelmReleases(type, namespace) {
 
 function dataFetchers(type, namespace) {
   switch (type) {
-    case 'classic':
+    case 'Pipelines Runtime':
       return {
         'Cron': () => batchApi.namespace(namespace).getCronJobList(),
         'Jobs': () => batchApi.namespace(namespace).getJobList(),
+        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
         'Nodes': () => coreApi.getNodeList(),
         'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
         'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
@@ -94,22 +97,30 @@ function dataFetchers(type, namespace) {
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
       };
-    case 'gitops':
+    case 'GitOps Runtime':
       return {
-        'Apps': () => argoProj.namespace(namespace).getApplicationList(),
-        'AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
+        'Argo-Apps': () => argoProj.namespace(namespace).getApplicationList(),
+        'Argo-AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
+        'Cron': () => batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': () => batchApi.namespace(namespace).getJobList(),
+        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
+        'Statefulsets': () => appsApi.namespace(namespace).getStatefulSetList(),
         'Nodes': () => coreApi.getNodeList(),
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
       };
-    case 'onprem':
+    case 'On-Prem':
       return {
+        'Cron': () => batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': () => batchApi.namespace(namespace).getJobList(),
         'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
         'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
         'Nodes': () => coreApi.getNodeList(),
         'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
         'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
@@ -128,18 +139,25 @@ async function fetchAndSaveData(type, namespace) {
 
     if (dir === 'Pods') {
       await Promise.all(resources.items.map(async (item) => {
-        let log;
-        try {
-          log = await coreApi.namespace(namespace).getPodLog(item.metadata.name, {
-            container: item.spec.containers[0].name,
-            timestamps: true,
-          });
-        } catch (error) {
-          console.error(`Failed to get items for ${item.metadata.name}:`, error);
-          log = error;
-        }
-        await Deno.writeTextFile(`${dirPath}/${dir}/${item.metadata.name}_log.log`, log);
-        await describeItems(dir, namespace, item.metadata.name);
+        const podName = item.metadata.name;
+        const containers = item.spec.containers;
+
+        await Promise.all(containers.map(async (container) => {
+          let log;
+          try {
+            log = await coreApi.namespace(namespace).getPodLog(podName, {
+              container: container.name,
+              timestamps: true,
+            });
+          } catch (error) {
+            console.error(`Failed to get logs for container ${container.name} in pod ${podName}:`, error);
+            log = error.toString();
+          }
+          const logFileName = `${dirPath}/${dir}/${podName}_${container.name}_log.log`;
+          await Deno.writeTextFile(logFileName, log);
+        }));
+
+        await describeItems(dir, namespace, podName);
       }));
     }
 
@@ -156,7 +174,7 @@ async function fetchAndSaveData(type, namespace) {
   await Deno.writeTextFile(`${dirPath}/ListPods.txt`, new TextDecoder().decode(output.stdout));
 }
 
-async function gatherClassic() {
+async function gatherPipelines() {
   try {
     const cf = new Codefresh();
     await cf.init();
@@ -166,10 +184,10 @@ async function gatherClassic() {
       console.log(`${index + 1}. ${re}`);
     });
 
-    let selection = Number(prompt('\nWhich Classic Runtime Are We Working With? (Number): '));
+    let selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
     while (isNaN(selection) || selection < 1 || selection > reNames.length) {
       console.log('Invalid selection. Please enter a number corresponding to one of the listed runtimes.');
-      selection = Number(prompt('\nWhich Classic Runtime Are We Working With? (Number): '));
+      selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
     }
 
     const reSpec = cf.runtimes[selection - 1];
@@ -177,11 +195,11 @@ async function gatherClassic() {
 
     console.log(`\nGathering Data For ${reSpec.metadata.name}.`);
 
-    await fetchAndSaveData('classic', namespace);
+    await fetchAndSaveData('Pipelines Runtime', namespace);
 
     await Deno.writeTextFile(`${dirPath}/runtimeSpec.yaml`, toYaml(reSpec, { skipInvalid: true }));
   } catch (error) {
-    console.error(`Error gathering classic runtime data:`, error);
+    console.error(`Error gathering Pipelines Runtime data:`, error);
   }
 }
 
@@ -203,7 +221,7 @@ async function gatherGitOps() {
 
     console.log(`\nGathering Data In ${namespace} For The GitOps Runtime.`);
 
-    await fetchAndSaveData('gitops', namespace);
+    await fetchAndSaveData('GitOps Runtime', namespace);
   } catch (error) {
     console.error(`Error gathering GitOps runtime data:`, error);
   }
@@ -213,8 +231,14 @@ async function gatherOnPrem() {
   try {
     const cf = new Codefresh();
     await cf.init();
+    if (cf.apiURL === 'https://g.codefresh.io') {
+      console.error(`The API URL ( ${cf.apiURL} ) is not an On Prem instance. Please use Pipelines Runtime or GitOps Runtime.`);
+      Deno.exit(1);
+    }
     const accounts = await cf.getOnPremAccounts();
     const runtimes = await cf.getOnPremRuntimes();
+    const userTotal = await cf.getOnPremUserTotal();
+    const systemFF = await cf.getOnPremSystemFF();
 
     const namespaceList = await coreApi.getNamespaceList();
     console.log('');
@@ -232,10 +256,12 @@ async function gatherOnPrem() {
 
     console.log(`\nGathering Data For On Prem.`);
 
-    await fetchAndSaveData('onprem', namespace);
+    await fetchAndSaveData('On-Prem', namespace);
 
     await Deno.writeTextFile(`${dirPath}/onPremAccounts.yaml`, toYaml(accounts, { skipInvalid: true }));
     await Deno.writeTextFile(`${dirPath}/onPremRuntimes.yaml`, toYaml(runtimes, { skipInvalid: true }));
+    await Deno.writeTextFile(`${dirPath}/onPremUserTotal.txt`, userTotal.toString());
+    await Deno.writeTextFile(`${dirPath}/onPremSystemFF.yaml`, toYaml(systemFF, { skipInvalid: true }));
   } catch (error) {
     console.error(`Error gathering On Prem data:`, error);
   }
@@ -246,13 +272,13 @@ async function main() {
     const runtimeType = selectRuntimeType();
 
     switch (runtimeType) {
-      case 'classic':
-        await gatherClassic();
+      case 'Pipelines Runtime':
+        await gatherPipelines();
         break;
-      case 'gitops':
+      case 'GitOps Runtime':
         await gatherGitOps();
         break;
-      case 'onprem':
+      case 'On-Prem':
         await gatherOnPrem();
         break;
     }
@@ -266,7 +292,7 @@ async function main() {
     console.log(`\nPlease attach ./codefresh-support-package-${timestamp}.zip to your support ticket.`);
     console.log('Before attaching, verify the contents and remove any sensitive information.');
   } catch (error) {
-    console.error(`Error in main function:`, error);
+    console.error(`Error:`, error);
   }
 }
 
