@@ -141,7 +141,7 @@ async function fetchAndSaveData(type, namespace) {
       await Promise.all(resources.items.map(async (item) => {
         const podName = item.metadata.name;
         const containers = item.spec.containers;
-    
+
         await Promise.all(containers.map(async (container) => {
           let log;
           try {
@@ -156,7 +156,7 @@ async function fetchAndSaveData(type, namespace) {
           const logFileName = `${dirPath}/${dir}/${podName}_${container.name}_log.log`;
           await Deno.writeTextFile(logFileName, log);
         }));
-    
+
         await describeItems(dir, namespace, podName);
       }));
     }
@@ -232,7 +232,8 @@ async function gatherOnPrem() {
     const cf = new Codefresh();
     await cf.init();
     if (cf.apiURL === 'https://g.codefresh.io') {
-      throw new Error('The API URL is not an On Prem instance. Please use Pipelines Runtime or GitOps Runtime.');
+      console.error(`The API URL ( ${cf.apiURL} ) is not an On Prem instance. Please use Pipelines Runtime or GitOps Runtime.`);
+      Deno.exit(1);
     }
     const accounts = await cf.getOnPremAccounts();
     const runtimes = await cf.getOnPremRuntimes();

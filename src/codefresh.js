@@ -102,5 +102,4 @@ class Codefresh {
   }
 }
 
-
 export { Codefresh };

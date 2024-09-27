@@ -3,7 +3,8 @@
     "indentWidth": 2,
     "lineWidth": 160,
     "singleQuote": true,
-    "semiColons": true
+    "semiColons": true,
+    "exclude": [".devcontainer/**"]
   },
   "tasks": {
     "pre-compile": "rm -rf ./bin && mkdir ./bin",
