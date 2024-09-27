@@ -1,5 +1,5 @@
 'use strict';
-import { parse } from 'https://deno.land/std@0.211.0/yaml/mod.ts';
+import { parse } from '@std/yaml';
 
 class Codefresh {
   async init() {
@@ -72,6 +72,35 @@ class Codefresh {
       return error;
     }
   }
+
+  async getOnPremUserTotal() {
+    try {
+      const response = await fetch(`${this.baseURL}/admin/users?limit=1&page=1`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      const users = await response.json();
+      return users.total;
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
+  }
+
+  async getOnPremSystemFF() {
+    try {
+      const response = await fetch(`${this.baseURL}/admin/features`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      const onPremSystemFF = await response.json();
+      return onPremSystemFF;
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
+  }
 }
+
 
 export { Codefresh };
