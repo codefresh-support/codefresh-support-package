@@ -4,7 +4,7 @@
     "lineWidth": 160,
     "singleQuote": true,
     "semiColons": true,
-    "exclude": [".devcontainer/**"]
+    "exclude": [".devcontainer/**", "README.md", "ci/**"]
   },
   "tasks": {
     "pre-compile": "rm -rf ./bin && mkdir ./bin",
