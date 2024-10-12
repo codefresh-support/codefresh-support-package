@@ -1,6 +1,6 @@
 'use strict';
 
-import { Codefresh } from './codefresh.js';
+import { Codefresh } from './codefresh/codefresh.js';
 import { autoDetectClient } from '@cloudydeno/kubernetes-client';
 import { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
 import { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
