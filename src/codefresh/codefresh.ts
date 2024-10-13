@@ -2,7 +2,7 @@ import { parse } from '../deps.ts';
 
 enum ContextKeys {
   Token = 'token',
-  Url = 'url'
+  Url = 'url',
 }
 
 interface Context {
@@ -18,11 +18,9 @@ interface CodefreshConfig {
 }
 
 async function readConfigFile() {
-  const configPath = Deno.build.os === 'windows'
-    ? `${Deno.env.get('USERPROFILE')}/.cfconfig`
-    : `${Deno.env.get('HOME')}/.cfconfig`;
-    const configFileContent = await Deno.readTextFile(configPath);
-    return parse(configFileContent) as CodefreshConfig;
+  const configPath = Deno.build.os === 'windows' ? `${Deno.env.get('USERPROFILE')}/.cfconfig` : `${Deno.env.get('HOME')}/.cfconfig`;
+  const configFileContent = await Deno.readTextFile(configPath);
+  return parse(configFileContent) as CodefreshConfig;
 }
 
 async function getCodefreshCredentials(envVar: string, configKey: ContextKeys) {
@@ -36,8 +34,7 @@ async function getCodefreshCredentials(envVar: string, configKey: ContextKeys) {
     return cfConfig.contexts[cfConfig['current-context']][configKey];
   } catch (error) {
     console.error('Failed to get Codefresh credentials:', error);
-    console.error('Please set the environment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid Codefresh config file.',
-    );
+    console.error('Please set the environment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid Codefresh config file.');
     Deno.exit(10);
   }
 }

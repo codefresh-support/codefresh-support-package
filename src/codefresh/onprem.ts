@@ -64,10 +64,6 @@ export class CodefreshOnPrem {
   }
 }
 
-
-
-
-
 async function onprem() {
   try {
     const cf = new Codefresh();

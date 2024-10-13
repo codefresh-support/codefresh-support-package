@@ -1,4 +1,4 @@
-import { RuntimeType, getUserRuntimeSelection } from './deps.ts';
+import { getUserRuntimeSelection, RuntimeType } from './deps.ts';
 
 async function main() {
   try {

@@ -1,4 +1,4 @@
-export class codefreshSAAS {
+export class CodefreshPipelines {
   headers: { Authorization: string };
   baseURL: string;
   runtimes: any;
@@ -22,7 +22,6 @@ export class codefreshSAAS {
     }
   }
 }
-
 
 async function pipelines() {
   try {

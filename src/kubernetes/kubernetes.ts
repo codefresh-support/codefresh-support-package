@@ -7,6 +7,7 @@ const storageApi = new StorageV1Api(kubeConfig);
 const batchApi = new BatchV1Api(kubeConfig);
 const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 
+
 function dataFetchers(type, namespace) {
   switch (type) {
     case 'Pipelines Runtime':
@@ -57,7 +58,6 @@ function dataFetchers(type, namespace) {
   }
 }
 
-
 async function saveEvents(namespace) {
   try {
     const events = new Deno.Command('kubectl', { args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'] });
@@ -68,7 +68,6 @@ async function saveEvents(namespace) {
   }
 }
 
-
 async function describeItems(dir, namespace, name) {
   try {
     const describe = new Deno.Command('kubectl', { args: ['describe', dir.toLowerCase(), '-n', namespace, name] });
@@ -78,7 +77,6 @@ async function describeItems(dir, namespace, name) {
     console.error(`Failed to describe ${name}:`, error);
   }
 }
-
 
 async function fetchAndSaveData(type, namespace) {
   for (const [dir, fetcher] of Object.entries(dataFetchers(type, namespace))) {

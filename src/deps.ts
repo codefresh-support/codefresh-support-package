@@ -8,9 +8,10 @@ export { compress } from '@fakoua/zip-ts';
 export { parse, stringify as toYaml } from '@std/yaml';
 
 // Internal dependencies
-export { RuntimeType } from './utils/runtime-type.ts';
+export { RuntimeType } from './codefresh/runtime-type.ts';
 export { getUserRuntimeSelection } from './utils/prompts.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
 export { CodefreshOnPrem } from './codefresh/onprem.ts';
-export { codefreshSAAS } from './codefresh/pipelines.ts';
+export { CodefreshPipelines } from './codefresh/pipelines.ts';
 export { gitops } from './codefresh/gitops.ts';
+export { SupportPackageGenerator } from './utils/support-package-generator.ts';
