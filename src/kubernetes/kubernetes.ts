@@ -1,4 +1,4 @@
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, StorageV1Api } from '../deps.ts';
+import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, StorageV1Api, RuntimeType } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -7,10 +7,26 @@ const storageApi = new StorageV1Api(kubeConfig);
 const batchApi = new BatchV1Api(kubeConfig);
 const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 
+export async function selectNamespace() {
+  const namespaceList = await coreApi.getNamespaceList();
+  console.log('');
+  namespaceList.items.forEach((namespace, index) => {
+    console.log(`${index + 1}. ${namespace.metadata?.name}`);
+  });
 
-function dataFetchers(type, namespace) {
+  let selection = Number(prompt('\nWhich Namespace Is The GitOps Runtime Installed In? (Number): '));
+  while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
+    console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
+    selection = Number(prompt('\nWhich Namespace Is The GitOps Runtime Installed In? (Number): '));
+  }
+
+  return namespaceList.items[selection - 1].metadata?.name;
+}
+
+
+function dataFetchers(type: RuntimeType, namespace: string) {
   switch (type) {
-    case 'Pipelines Runtime':
+    case RuntimeType.pipelines:
       return {
         'Cron': () => batchApi.namespace(namespace).getCronJobList(),
         'Jobs': () => batchApi.namespace(namespace).getJobList(),
@@ -24,7 +40,7 @@ function dataFetchers(type, namespace) {
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
       };
-    case 'GitOps Runtime':
+    case RuntimeType.gitops:
       return {
         'Argo-Apps': () => argoProj.namespace(namespace).getApplicationList(),
         'Argo-AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
@@ -38,7 +54,7 @@ function dataFetchers(type, namespace) {
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
       };
-    case 'On-Prem':
+    case RuntimeType.onprem:
       return {
         'Cron': () => batchApi.namespace(namespace).getCronJobList(),
         'Jobs': () => batchApi.namespace(namespace).getJobList(),
@@ -58,25 +74,7 @@ function dataFetchers(type, namespace) {
   }
 }
 
-async function saveEvents(namespace) {
-  try {
-    const events = new Deno.Command('kubectl', { args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'] });
-    const output = await events.output();
-    await Deno.writeTextFile(`${dirPath}/Events.txt`, new TextDecoder().decode(output.stdout));
-  } catch (error) {
-    console.error(`Error saving events:`, error);
-  }
-}
 
-async function describeItems(dir, namespace, name) {
-  try {
-    const describe = new Deno.Command('kubectl', { args: ['describe', dir.toLowerCase(), '-n', namespace, name] });
-    const output = await describe.output();
-    await Deno.writeTextFile(`${dirPath}/${dir}/${name}_describe.yaml`, new TextDecoder().decode(output.stdout));
-  } catch (error) {
-    console.error(`Failed to describe ${name}:`, error);
-  }
-}
 
 async function fetchAndSaveData(type, namespace) {
   for (const [dir, fetcher] of Object.entries(dataFetchers(type, namespace))) {

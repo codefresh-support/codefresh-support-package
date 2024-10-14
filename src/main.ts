@@ -3,9 +3,9 @@ import { getUserRuntimeSelection, RuntimeType } from './deps.ts';
 async function main() {
   try {
     const runtimeTypes = Object.values(RuntimeType);
-    const typeSelected = getUserRuntimeSelection(runtimeTypes);
+    const runtimeSelected = getUserRuntimeSelection(runtimeTypes);
 
-    switch (runtimeTypes[typeSelected - 1]) {
+    switch (runtimeTypes[runtimeSelected - 1]) {
       case RuntimeType.pipelines:
         // await pipelines();
         console.log('Pipelines Runtime');

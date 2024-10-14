@@ -9,9 +9,6 @@ export { parse, stringify as toYaml } from '@std/yaml';
 
 // Internal dependencies
 export { RuntimeType } from './codefresh/runtime-type.ts';
-export { getUserRuntimeSelection } from './utils/prompts.ts';
+export { getUserRuntimeSelection } from './utils/select-runtime.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
-export { CodefreshOnPrem } from './codefresh/onprem.ts';
-export { CodefreshPipelines } from './codefresh/pipelines.ts';
-export { gitops } from './codefresh/gitops.ts';
-export { SupportPackageGenerator } from './utils/support-package-generator.ts';
+export { selectNamespace } from './kubernetes/kubernetes.ts';
