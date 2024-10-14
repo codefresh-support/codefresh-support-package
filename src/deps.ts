@@ -11,4 +11,5 @@ export { parse, stringify as toYaml } from '@std/yaml';
 export { RuntimeType } from './codefresh/runtime-type.ts';
 export { getUserRuntimeSelection } from './utils/select-runtime.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
+export {writeGetApiCalls, prepareAndCleanup} from './utils/file-io.ts';
 export { selectNamespace } from './kubernetes/kubernetes.ts';

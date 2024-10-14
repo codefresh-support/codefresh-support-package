@@ -24,7 +24,7 @@ export async function selectNamespace() {
 }
 
 
-function dataFetchers(type: RuntimeType, namespace: string) {
+export function getK8sResources(type: RuntimeType, namespace: string) {
   switch (type) {
     case RuntimeType.pipelines:
       return {
@@ -74,47 +74,40 @@ function dataFetchers(type: RuntimeType, namespace: string) {
   }
 }
 
-
-
-async function fetchAndSaveData(type, namespace) {
-  for (const [dir, fetcher] of Object.entries(dataFetchers(type, namespace))) {
-    const resources = await fetcher();
-
-    await saveItems(resources.items, dir);
-
-    if (dir === 'Pods') {
-      await Promise.all(resources.items.map(async (item) => {
-        const podName = item.metadata.name;
-        const containers = item.spec.containers;
-
-        await Promise.all(containers.map(async (container) => {
-          let log;
-          try {
-            log = await coreApi.namespace(namespace).getPodLog(podName, {
-              container: container.name,
-              timestamps: true,
-            });
-          } catch (error) {
-            console.error(`Failed to get logs for container ${container.name} in pod ${podName}:`, error);
-            log = error.toString();
-          }
-          const logFileName = `${dirPath}/${dir}/${podName}_${container.name}_log.log`;
-          await Deno.writeTextFile(logFileName, log);
-        }));
-
-        await describeItems(dir, namespace, podName);
-      }));
-    }
-
-    if (dir === 'Nodes') {
-      await Promise.all(resources.items.map(async (item) => {
-        await describeItems(dir, namespace, item.metadata.name);
-      }));
-    }
+// TODO: // convert using the kubernetes sdk
+export async function getK8sEvents(namespace: string) {
+  try {
+    const events = await coreApi.namespace(namespace).getEventList({ sortBy: '.metadata.creationTimestamp' });
+    // const events = new Deno.Command('kubectl', { args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'] });
+    // const output = await events.output();
+    await Deno.writeTextFile(`${dirPath}/Events.txt`, new TextDecoder().decode(output.stdout));
+  } catch (error) {
+    console.error(`Error saving events:`, error);
   }
-  await saveHelmReleases(type, namespace);
-  await saveEvents(namespace);
-  const listPods = new Deno.Command('kubectl', { args: ['get', 'pods', '-n', namespace] });
-  const output = await listPods.output();
-  await Deno.writeTextFile(`${dirPath}/ListPods.txt`, new TextDecoder().decode(output.stdout));
 }
+
+// TODO: // convert using the kubernetes sdk
+
+export async function describeK8sResources(dir, namespace, name) {
+  try {
+    const describe = new Deno.Command('kubectl', { args: ['describe', dir.toLowerCase(), '-n', namespace, name] });
+    const output = await describe.output();
+    await Deno.writeTextFile(`${dirPath}/${dir}/${name}_describe.yaml`, new TextDecoder().decode(output.stdout));
+  } catch (error) {
+    console.error(`Failed to describe ${name}:`, error);
+  }
+}
+
+// TODO: // convert using the kubernetes sdk
+export async function getHelmReleases(namespace: string) {
+  try {
+    const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
+    const output = await helmList.output();
+    const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
+    return helmReleases;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+
