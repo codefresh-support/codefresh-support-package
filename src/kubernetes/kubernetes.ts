@@ -1,5 +1,5 @@
 import type { EventList, SecretList } from '@cloudydeno/kubernetes-apis/core/v1';
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, RuntimeType, StorageV1Api, decodeBase64, ungzip } from '../deps.ts';
+import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, ungzip } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -30,55 +30,55 @@ export async function selectNamespace() {
   return namespace;
 }
 
-export function getK8sResources(type: RuntimeType, namespace: string) {
-  switch (type) {
+function getK8sResources(runtimeType: RuntimeType, namespace: string) {
+  switch (runtimeType) {
     case RuntimeType.pipelines:
       return {
-        'Cron': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Storageclass': () => storageApi.getStorageClassList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
+        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': batchApi.namespace(namespace).getJobList(),
+        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
+        'Nodes': coreApi.getNodeList(),
+        'Volumes': coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
+        'Volumeclaims': coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Configmaps': coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
+        'Services': coreApi.namespace(namespace).getServiceList(),
+        'Pods': coreApi.namespace(namespace).getPodList(),
+        'Storageclass': storageApi.getStorageClassList(),
+        'Events': coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     case RuntimeType.gitops:
       return {
-        'ArgoApps': () => argoProj.namespace(namespace).getApplicationList(),
-        'ArgoAppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
-        'Cron': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Statefulsets': () => appsApi.namespace(namespace).getStatefulSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
+        'Apps': argoProj.namespace(namespace).getApplicationList(),
+        'AppSets': argoProj.namespace(namespace).getApplicationSetList(),
+        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': batchApi.namespace(namespace).getJobList(),
+        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
+        'Statefulsets': appsApi.namespace(namespace).getStatefulSetList(),
+        'Nodes': coreApi.getNodeList(),
+        'Configmaps': coreApi.namespace(namespace).getConfigMapList(),
+        'Services': coreApi.namespace(namespace).getServiceList(),
+        'Pods': coreApi.namespace(namespace).getPodList(),
+        'Events': coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     case RuntimeType.onprem:
       return {
-        'Cron': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Storageclass': () => storageApi.getStorageClassList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
+        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': batchApi.namespace(namespace).getJobList(),
+        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
+        'Nodes': coreApi.getNodeList(),
+        'Volumes': coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
+        'Volumeclaims': coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Configmaps': coreApi.namespace(namespace).getConfigMapList(),
+        'Services': coreApi.namespace(namespace).getServiceList(),
+        'Pods': coreApi.namespace(namespace).getPodList(),
+        'Storageclass': storageApi.getStorageClassList(),
+        'Events': coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     default:
       console.error('Invalid runtime type selected');
@@ -86,7 +86,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
   }
 }
 
-export function getFormattedEvents(events: EventList) {
+function getFormattedEvents(events: EventList) {
   // Sort the events by .metadata.creationTimestamp
   const sortedEvents = events.items.sort((a, b) => {
     const dateA = a.metadata.creationTimestamp ? new Date(a.metadata.creationTimestamp).getTime() : 0;
@@ -105,40 +105,46 @@ export function getFormattedEvents(events: EventList) {
   return formattedEvents.join('\n');
 }
 
-export function getHelmReleases(secrets: SecretList) {
-
+function getHelmReleases(secrets: SecretList) {
   const helmReleases = secrets.items.map((secret) => {
-      const releaseData = secret.data?.release;
-      if (!releaseData) {
-        throw new Error('Release data is undefined');
-      }
-      const firstDecodedData = decodeBase64(releaseData);
-      const secondDecodedData = decodeBase64(new TextDecoder().decode(firstDecodedData));
-      const extractedData = JSON.parse(ungzip(secondDecodedData, { to: 'string' }));
+    const releaseData = secret.data?.release;
+    if (!releaseData) {
+      throw new Error('Release data is undefined');
+    }
+    const firstDecodedData = decodeBase64(releaseData);
+    const secondDecodedData = decodeBase64(new TextDecoder().decode(firstDecodedData));
+    const extractedData = JSON.parse(ungzip(secondDecodedData, { to: 'string' }));
 
-      const helmInfo = {
-        name: extractedData.name,
-        namespace: extractedData.namespace,
-        revision: extractedData.version,
-        updated: extractedData.info.last_deployed,
-        status: extractedData.info.status,
-        chart: `${extractedData.chart.metadata.name}-${extractedData.chart.metadata.version}`,
-        app_version: extractedData.chart.metadata.appVersion,
-      }
-      return helmInfo;
-    });
+    const helmInfo = {
+      'name': extractedData.name,
+      'namespace': extractedData.namespace,
+      'revision': extractedData.version,
+      'updated': extractedData.info.last_deployed,
+      'status': extractedData.info.status,
+      'chart': `${extractedData.chart.metadata.name}-${extractedData.chart.metadata.version}`,
+      'appVersion': extractedData.chart.metadata.appVersion,
+    };
+    return helmInfo;
+  });
 
   return helmReleases;
 }
 
 // TODO: // convert using the kubernetes sdk
 
-export async function describeK8sResources(dir, namespace, name) {
-  try {
-    const describe = new Deno.Command('kubectl', { args: ['describe', dir.toLowerCase(), '-n', namespace, name] });
-    const output = await describe.output();
-    await Deno.writeTextFile(`${dirPath}/${dir}/${name}_describe.yaml`, new TextDecoder().decode(output.stdout));
-  } catch (error) {
-    console.error(`Failed to describe ${name}:`, error);
+async function describeK8sResources(resourceType: string, namespace: string, name: string) {
+  const describe = new Deno.Command('kubectl', { args: ['describe', resourceType.toLowerCase(), '-n', namespace, name] });
+  
+  return new TextDecoder().decode((await describe.output()).stdout);
+}
+
+
+export async function gatherK8sResources(runtimeType: RuntimeType, namespace: string) {
+  const runtimeK8sResources = getK8sResources(runtimeType, namespace);
+  if (!runtimeK8sResources) {
+    throw new Error("Failed to get Kubernetes resources.");
   }
+  const formattedEvents = getFormattedEvents( await runtimeK8sResources.Events);
+  const helmReleases = getHelmReleases( await runtimeK8sResources.HelmReleases);
+
 }
