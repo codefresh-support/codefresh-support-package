@@ -39,12 +39,10 @@ async function getCodefreshCredentials(envVar: string, configKey: ContextKeys) {
   }
 }
 
-async function autoDetectCodefreshClient() {
+export async function autoDetectCodefreshClient() {
   const headers = {
     Authorization: await getCodefreshCredentials('CF_API_KEY', ContextKeys.Token),
   };
   const baseUrl = await getCodefreshCredentials('CF_BASE_URL', ContextKeys.Url);
   return { headers, baseUrl };
 }
-
-export { autoDetectCodefreshClient };

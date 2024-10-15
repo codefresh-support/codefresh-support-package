@@ -1,3 +1,4 @@
+import type { EventList } from '@cloudydeno/kubernetes-apis/core/v1';
 import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, StorageV1Api, RuntimeType } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
@@ -10,7 +11,7 @@ const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 export async function selectNamespace() {
   const namespaceList = await coreApi.getNamespaceList();
   console.log('');
-  namespaceList.items.forEach((namespace, index) => {
+  namespaceList.items.forEach((namespace: any, index: number) => {
     console.log(`${index + 1}. ${namespace.metadata?.name}`);
   });
 
@@ -39,6 +40,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
       };
     case RuntimeType.gitops:
       return {
@@ -53,6 +55,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
       };
     case RuntimeType.onprem:
       return {
@@ -67,6 +70,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
       };
     default:
       console.error('Invalid runtime type selected');
@@ -74,16 +78,23 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
   }
 }
 
-// TODO: // convert using the kubernetes sdk
-export async function getK8sEvents(namespace: string) {
-  try {
-    const events = await coreApi.namespace(namespace).getEventList({ sortBy: '.metadata.creationTimestamp' });
-    // const events = new Deno.Command('kubectl', { args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'] });
-    // const output = await events.output();
-    await Deno.writeTextFile(`${dirPath}/Events.txt`, new TextDecoder().decode(output.stdout));
-  } catch (error) {
-    console.error(`Error saving events:`, error);
-  }
+export function getFormattedEvents(events: EventList) {
+  // Sort the events by .metadata.creationTimestamp
+  const sortedEvents = events.items.sort((a, b) => {
+    const dateA = a.metadata.creationTimestamp ? new Date(a.metadata.creationTimestamp).getTime() : 0;
+    const dateB = b.metadata.creationTimestamp ? new Date(b.metadata.creationTimestamp).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  // Format the output to match kubectl style
+  const formattedEvents = sortedEvents.map(event => {
+    const { lastTimestamp, type, reason, message, involvedObject } = event;
+    const { name, kind } = involvedObject;
+    const utcTimestamp = lastTimestamp ? new Date(lastTimestamp).toISOString() : 'N/A';
+    return `${utcTimestamp}\t${type}\t${reason}/t${kind}\t${name}\t${message}`;
+  });
+
+  return formattedEvents.join('\n');
 }
 
 // TODO: // convert using the kubernetes sdk

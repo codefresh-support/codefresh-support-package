@@ -8,8 +8,6 @@ export { compress } from '@fakoua/zip-ts';
 export { parse, stringify as toYaml } from '@std/yaml';
 
 // Internal dependencies
-export { RuntimeType } from './codefresh/runtime-type.ts';
-export { getUserRuntimeSelection } from './utils/select-runtime.ts';
+export { RuntimeType, getUserRuntimeSelection } from './codefresh/runtime-type.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
-export {writeGetApiCalls, prepareAndCleanup} from './utils/file-io.ts';
 export { selectNamespace } from './kubernetes/kubernetes.ts';

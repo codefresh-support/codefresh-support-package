@@ -1,0 +1,799 @@
+{
+  "apiVersion": "v1",
+  "kind": "EventList",
+  "metadata": {
+    "resourceVersion": "1805380"
+  },
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:25.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "argo-cd-redis-secret-init-fw5qv",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805328",
+        "uid": "52f0814d-6c65-4ac4-b7bf-5a1abd580ece"
+      },
+      "lastTimestamp": "2024-10-15T14:36:25.000Z",
+      "message": "Successfully assigned cf-gitops/argo-cd-redis-secret-init-fw5qv to ip-10-120-174-160.ec2.internal",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:25.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:25.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init-fw5qv.17fea70e1a6ef970",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805329",
+        "uid": "d5b22fc8-de59-4d09-81af-0fa3d8135bad"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:26.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{secret-init}",
+        "kind": "Pod",
+        "name": "argo-cd-redis-secret-init-fw5qv",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805330",
+        "uid": "52f0814d-6c65-4ac4-b7bf-5a1abd580ece"
+      },
+      "lastTimestamp": "2024-10-15T14:36:26.000Z",
+      "message": "Container image \"quay.io/codefresh/argocd:v2.12-2024.10.5-66e1e38fa\" already present on machine",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:26.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:26.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init-fw5qv.17fea70e39480776",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805337",
+        "uid": "8c62773d-59aa-4c4f-b170-483b555da604"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:26.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{secret-init}",
+        "kind": "Pod",
+        "name": "argo-cd-redis-secret-init-fw5qv",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805330",
+        "uid": "52f0814d-6c65-4ac4-b7bf-5a1abd580ece"
+      },
+      "lastTimestamp": "2024-10-15T14:36:26.000Z",
+      "message": "Created container secret-init",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:26.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:26.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init-fw5qv.17fea70e3b0214b7",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805338",
+        "uid": "f5b7513e-c725-4d11-86cf-5fc553111173"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:26.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{secret-init}",
+        "kind": "Pod",
+        "name": "argo-cd-redis-secret-init-fw5qv",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805330",
+        "uid": "52f0814d-6c65-4ac4-b7bf-5a1abd580ece"
+      },
+      "lastTimestamp": "2024-10-15T14:36:26.000Z",
+      "message": "Started container secret-init",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:26.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:26.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init-fw5qv.17fea70e464429a4",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805340",
+        "uid": "d081a3b0-6146-4246-830a-fb586add69ad"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:25.000Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "argo-cd-redis-secret-init",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805320",
+        "uid": "6d26ec60-8a7e-448e-8a9a-503782cea8b5"
+      },
+      "lastTimestamp": "2024-10-15T14:36:25.000Z",
+      "message": "Created pod: argo-cd-redis-secret-init-fw5qv",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:25.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "k3s",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:25.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init.17fea70e0dc28d4b",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805323",
+        "uid": "da872f8c-c545-4d15-9c1c-2143ce352ab5"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:30.000Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "argo-cd-redis-secret-init",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805364",
+        "uid": "6d26ec60-8a7e-448e-8a9a-503782cea8b5"
+      },
+      "lastTimestamp": "2024-10-15T14:36:30.000Z",
+      "message": "Job completed",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:30.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "k3s",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:30.000Z"
+          }
+        ],
+        "name": "argo-cd-redis-secret-init.17fea70f0db5eaa4",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805367",
+        "uid": "95d51354-226e-4344-b5ce-86a72978af88"
+      },
+      "reason": "Completed",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:16.000Z",
+      "involvedObject": {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "name": "codefresh-gitops",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805188",
+        "uid": "112d1b90-8090-4e79-9d11-94712243cac9"
+      },
+      "lastTimestamp": "2024-10-15T14:36:16.000Z",
+      "message": "Initiated automated sync to '65ad258caae299cf3cdf8ed1271e40b39b4406fc'",
+      "metadata": {
+        "annotations": {
+          "dest-namespace": "cf-gitops",
+          "dest-server": "https://kubernetes.default.svc"
+        },
+        "creationTimestamp": "2024-10-15T14:36:16.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:dest-namespace": {},
+                  "f:dest-server": {}
+                }
+              },
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "argocd-application-controller",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:16.000Z"
+          }
+        ],
+        "name": "codefresh-gitops.17fea70be2c76165",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805266",
+        "uid": "654aa97c-8243-488a-9691-286fd5f32a08"
+      },
+      "reason": "OperationStarted",
+      "reportingComponent": "",
+      "reportingInstance": "",
+      "source": {
+        "component": "argocd-application-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:16.000Z",
+      "involvedObject": {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "name": "codefresh-gitops",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805188",
+        "uid": "112d1b90-8090-4e79-9d11-94712243cac9"
+      },
+      "lastTimestamp": "2024-10-15T14:36:16.000Z",
+      "message": "Updated sync status: Synced -> OutOfSync",
+      "metadata": {
+        "annotations": {
+          "dest-namespace": "cf-gitops",
+          "dest-server": "https://kubernetes.default.svc"
+        },
+        "creationTimestamp": "2024-10-15T14:36:16.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:dest-namespace": {},
+                  "f:dest-server": {}
+                }
+              },
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "argocd-application-controller",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:16.000Z"
+          }
+        ],
+        "name": "codefresh-gitops.17fea70be36bad16",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805267",
+        "uid": "4fe43f82-66a1-4621-a343-9f79b18a35cd"
+      },
+      "reason": "ResourceUpdated",
+      "reportingComponent": "",
+      "reportingInstance": "",
+      "source": {
+        "component": "argocd-application-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:26.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "validate-values-9n5z6",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805325",
+        "uid": "235c3616-c2b3-4c4d-ba9b-03285ac97348"
+      },
+      "lastTimestamp": "2024-10-15T14:36:26.000Z",
+      "message": "Successfully assigned cf-gitops/validate-values-9n5z6 to ip-10-120-174-160.ec2.internal",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:26.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:26.000Z"
+          }
+        ],
+        "name": "validate-values-9n5z6.17fea70e29fbd0cc",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805335",
+        "uid": "45c4ebf2-d9f1-4e70-ad07-ffb5ce80ee67"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:26.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{validate-values}",
+        "kind": "Pod",
+        "name": "validate-values-9n5z6",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805336",
+        "uid": "235c3616-c2b3-4c4d-ba9b-03285ac97348"
+      },
+      "lastTimestamp": "2024-10-15T14:36:26.000Z",
+      "message": "Pulling image \"quay.io/codefresh/gitops-runtime-installer:0.13.2\"",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:26.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:26.000Z"
+          }
+        ],
+        "name": "validate-values-9n5z6.17fea70e517abd1f",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805342",
+        "uid": "493d5cd8-857c-4be6-b11c-cd4979ff89d3"
+      },
+      "reason": "Pulling",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:31.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{validate-values}",
+        "kind": "Pod",
+        "name": "validate-values-9n5z6",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805336",
+        "uid": "235c3616-c2b3-4c4d-ba9b-03285ac97348"
+      },
+      "lastTimestamp": "2024-10-15T14:36:31.000Z",
+      "message": "Successfully pulled image \"quay.io/codefresh/gitops-runtime-installer:0.13.2\" in 4.935s (4.935s including waiting)",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:31.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:31.000Z"
+          }
+        ],
+        "name": "validate-values-9n5z6.17fea70f77a1ebcc",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805375",
+        "uid": "031a2c12-0d8e-4bd4-9bb9-22507c46815f"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:31.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{validate-values}",
+        "kind": "Pod",
+        "name": "validate-values-9n5z6",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805336",
+        "uid": "235c3616-c2b3-4c4d-ba9b-03285ac97348"
+      },
+      "lastTimestamp": "2024-10-15T14:36:31.000Z",
+      "message": "Created container validate-values",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:31.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:31.000Z"
+          }
+        ],
+        "name": "validate-values-9n5z6.17fea70f79434edf",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805376",
+        "uid": "65cbd979-5709-42d3-b9d7-0762755db57f"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:31.000Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{validate-values}",
+        "kind": "Pod",
+        "name": "validate-values-9n5z6",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805336",
+        "uid": "235c3616-c2b3-4c4d-ba9b-03285ac97348"
+      },
+      "lastTimestamp": "2024-10-15T14:36:31.000Z",
+      "message": "Started container validate-values",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:31.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:reportingInstance": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            },
+            "manager": "vcluster",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:31.000Z"
+          }
+        ],
+        "name": "validate-values-9n5z6.17fea70f7e235169",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805377",
+        "uid": "061d011b-9e78-45d6-a43b-bd2cdfc89a31"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "ip-10-120-174-160.ec2.internal",
+      "source": {
+        "component": "kubelet",
+        "host": "ip-10-120-174-160.ec2.internal"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Event",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2024-10-15T14:36:25.000Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "validate-values",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805321",
+        "uid": "a626629b-d847-49f3-8859-06c47a819fd3"
+      },
+      "lastTimestamp": "2024-10-15T14:36:25.000Z",
+      "message": "Created pod: validate-values-9n5z6",
+      "metadata": {
+        "creationTimestamp": "2024-10-15T14:36:25.000Z",
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:reportingComponent": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            },
+            "manager": "k3s",
+            "operation": "Update",
+            "time": "2024-10-15T14:36:25.000Z"
+          }
+        ],
+        "name": "validate-values.17fea70e11a57e24",
+        "namespace": "cf-gitops",
+        "resourceVersion": "1805326",
+        "uid": "e2d2fe47-4ada-4556-8098-6c5435e6bac5"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    }
+  ]
+}

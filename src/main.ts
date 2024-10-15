@@ -5,7 +5,7 @@ async function main() {
     const runtimeTypes = Object.values(RuntimeType);
     const runtimeSelected = getUserRuntimeSelection(runtimeTypes);
 
-    switch (runtimeTypes[runtimeSelected - 1]) {
+    switch (runtimeSelected) {
       case RuntimeType.pipelines:
         // await pipelines();
         console.log('Pipelines Runtime');
