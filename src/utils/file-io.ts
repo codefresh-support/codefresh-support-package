@@ -1,7 +1,7 @@
 import { compress, toYaml } from '../deps.ts';
 
 const timestamp = new Date().getTime();
-const dirPath = `./codefresh-support-${timestamp}`
+const dirPath = `./codefresh-support-${timestamp}`;
 
 export async function creatDirectory(path: string) {
   try {
@@ -24,7 +24,6 @@ export async function writeGetApiCalls(resources: any, path: string) {
   }
 }
 
-
 export async function prepareAndCleanup() {
   try {
     console.log(`\nSaving data to ./codefresh-support-package-${timestamp}.zip`);
@@ -38,7 +37,6 @@ export async function prepareAndCleanup() {
     console.error('Error during prepare and cleanup:', error);
   }
 }
-
 
 // async function fetchAndSaveData(type, namespace) {
 //   for (const [dir, fetcher] of Object.entries(dataFetchers(type, namespace))) {

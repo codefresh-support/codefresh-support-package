@@ -1,5 +1,5 @@
-import type { EventList } from '@cloudydeno/kubernetes-apis/core/v1';
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, StorageV1Api, RuntimeType } from '../deps.ts';
+import type { EventList, SecretList } from '@cloudydeno/kubernetes-apis/core/v1';
+import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, RuntimeType, StorageV1Api, decodeBase64, ungzip } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -11,7 +11,7 @@ const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 export async function selectNamespace() {
   const namespaceList = await coreApi.getNamespaceList();
   console.log('');
-  namespaceList.items.forEach((namespace: any, index: number) => {
+  namespaceList.items.forEach((namespace, index: number) => {
     console.log(`${index + 1}. ${namespace.metadata?.name}`);
   });
 
@@ -21,9 +21,14 @@ export async function selectNamespace() {
     selection = Number(prompt('\nWhich Namespace Is The GitOps Runtime Installed In? (Number): '));
   }
 
-  return namespaceList.items[selection - 1].metadata?.name;
-}
+  const namespace = namespaceList.items[selection - 1].metadata?.name;
 
+  if (!namespace) {
+    throw new Error('Selected namespace is invalid.');
+  }
+
+  return namespace;
+}
 
 export function getK8sResources(type: RuntimeType, namespace: string) {
   switch (type) {
@@ -41,11 +46,12 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
         'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
       };
     case RuntimeType.gitops:
       return {
-        'Argo-Apps': () => argoProj.namespace(namespace).getApplicationList(),
-        'Argo-AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
+        'ArgoApps': () => argoProj.namespace(namespace).getApplicationList(),
+        'ArgoAppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
         'Cron': () => batchApi.namespace(namespace).getCronJobList(),
         'Jobs': () => batchApi.namespace(namespace).getJobList(),
         'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
@@ -56,6 +62,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
       };
     case RuntimeType.onprem:
       return {
@@ -71,6 +78,7 @@ export function getK8sResources(type: RuntimeType, namespace: string) {
         'Pods': () => coreApi.namespace(namespace).getPodList(),
         'Storageclass': () => storageApi.getStorageClassList(),
         'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm'}),
       };
     default:
       console.error('Invalid runtime type selected');
@@ -87,7 +95,7 @@ export function getFormattedEvents(events: EventList) {
   });
 
   // Format the output to match kubectl style
-  const formattedEvents = sortedEvents.map(event => {
+  const formattedEvents = sortedEvents.map((event) => {
     const { lastTimestamp, type, reason, message, involvedObject } = event;
     const { name, kind } = involvedObject;
     const utcTimestamp = lastTimestamp ? new Date(lastTimestamp).toISOString() : 'N/A';
@@ -95,6 +103,32 @@ export function getFormattedEvents(events: EventList) {
   });
 
   return formattedEvents.join('\n');
+}
+
+export function getHelmReleases(secrets: SecretList) {
+
+  const helmReleases = secrets.items.map((secret) => {
+      const releaseData = secret.data?.release;
+      if (!releaseData) {
+        throw new Error('Release data is undefined');
+      }
+      const firstDecodedData = decodeBase64(releaseData);
+      const secondDecodedData = decodeBase64(new TextDecoder().decode(firstDecodedData));
+      const extractedData = JSON.parse(ungzip(secondDecodedData, { to: 'string' }));
+
+      const helmInfo = {
+        name: extractedData.name,
+        namespace: extractedData.namespace,
+        revision: extractedData.version,
+        updated: extractedData.info.last_deployed,
+        status: extractedData.info.status,
+        chart: `${extractedData.chart.metadata.name}-${extractedData.chart.metadata.version}`,
+        app_version: extractedData.chart.metadata.appVersion,
+      }
+      return helmInfo;
+    });
+
+  return helmReleases;
 }
 
 // TODO: // convert using the kubernetes sdk
@@ -108,17 +142,3 @@ export async function describeK8sResources(dir, namespace, name) {
     console.error(`Failed to describe ${name}:`, error);
   }
 }
-
-// TODO: // convert using the kubernetes sdk
-export async function getHelmReleases(namespace: string) {
-  try {
-    const helmList = new Deno.Command('helm', { args: ['list', '-n', namespace, '-o', 'json'] });
-    const output = await helmList.output();
-    const helmReleases = JSON.parse(new TextDecoder().decode(output.stdout));
-    return helmReleases;
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-
