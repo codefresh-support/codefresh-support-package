@@ -1,5 +1,5 @@
-import type { EventList, SecretList } from '@cloudydeno/kubernetes-apis/core/v1';
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, ungzip } from '../deps.ts';
+import type { EventList, PodList, SecretList, PersistentVolumeClaimList, PersistentVolumeList } from '../deps.ts';
+import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, ungzip, Table } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -30,7 +30,7 @@ export async function selectNamespace() {
   return namespace;
 }
 
-function getK8sResources(runtimeType: RuntimeType, namespace: string) {
+export function getK8sResources(runtimeType: RuntimeType, namespace: string) {
   switch (runtimeType) {
     case RuntimeType.pipelines:
       return {
@@ -86,7 +86,16 @@ function getK8sResources(runtimeType: RuntimeType, namespace: string) {
   }
 }
 
-function getFormattedEvents(events: EventList) {
+function calculateAge(creationTimestamp: Date) {
+  const now = new Date();
+  const diffMs = now.getTime() - creationTimestamp.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return `${diffDays}d ${diffHours}h ${diffMinutes}m`;
+}
+
+export function getFormattedEvents(events: EventList) {
   // Sort the events by .metadata.creationTimestamp
   const sortedEvents = events.items.sort((a, b) => {
     const dateA = a.metadata.creationTimestamp ? new Date(a.metadata.creationTimestamp).getTime() : 0;
@@ -98,14 +107,14 @@ function getFormattedEvents(events: EventList) {
   const formattedEvents = sortedEvents.map((event) => {
     const { lastTimestamp, type, reason, message, involvedObject } = event;
     const { name, kind } = involvedObject;
-    const utcTimestamp = lastTimestamp ? new Date(lastTimestamp).toISOString() : 'N/A';
-    return `${utcTimestamp}\t${type}\t${reason}/t${kind}\t${name}\t${message}`;
+    const lastSeen = lastTimestamp ? calculateAge(lastTimestamp) : 'N/A';
+    return `${lastSeen}\t${type}\t${reason}\t${kind}\t${name}\t${message}`;
   });
 
   return formattedEvents.join('\n');
 }
 
-function getHelmReleases(secrets: SecretList) {
+export function getHelmReleases(secrets: SecretList) {
   const helmReleases = secrets.items.map((secret) => {
     const releaseData = secret.data?.release;
     if (!releaseData) {
@@ -132,19 +141,81 @@ function getHelmReleases(secrets: SecretList) {
 
 // TODO: // convert using the kubernetes sdk
 
-async function describeK8sResources(resourceType: string, namespace: string, name: string) {
+export async function describeK8sResources(resourceType: string, namespace: string, name: string) {
   const describe = new Deno.Command('kubectl', { args: ['describe', resourceType.toLowerCase(), '-n', namespace, name] });
   
   return new TextDecoder().decode((await describe.output()).stdout);
 }
 
+export async function getK8sLogs(namespace: string, podName: string, containerName: string) {
+  return await coreApi.namespace(namespace).getPodLog(podName, {
+    container: containerName,
+    timestamps: true,
+  });
+}
 
-export async function gatherK8sResources(runtimeType: RuntimeType, namespace: string) {
-  const runtimeK8sResources = getK8sResources(runtimeType, namespace);
-  if (!runtimeK8sResources) {
-    throw new Error("Failed to get Kubernetes resources.");
-  }
-  const formattedEvents = getFormattedEvents( await runtimeK8sResources.Events);
-  const helmReleases = getHelmReleases( await runtimeK8sResources.HelmReleases);
+export function getPodList(pods: PodList) {
+  const table = new Table();
+  table.theme = Table.roundTheme;
+  table.headers = ['Name', 'Ready', 'Status', 'Restarts', 'Age'];
 
+
+  pods.items.forEach((pod) => {
+    const { metadata, status } = pod;
+    const podInfo = [
+      metadata?.name ?? 'N/A',
+      `${status?.containerStatuses?.filter(cs => cs.ready).length ?? 0}/${status?.containerStatuses?.length ?? 0}`,
+      status?.phase ?? 'Unknown',
+      status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0,
+      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
+    ];
+    table.rows.push(podInfo);
+  });
+
+  return table.toString();
+}
+
+export function getPVCList(Volumeclaims: PersistentVolumeClaimList) {
+  const table = new Table();
+  table.theme = Table.roundTheme;
+  table.headers = ['Name', 'Status', 'Volume', 'Capacity', 'Access Modes', 'Storage Class', 'Age'];
+
+  Volumeclaims.items.forEach((pvc) => {
+    const { metadata, status, spec } = pvc;
+    const pvcInfo = [
+      metadata?.name ?? 'N/A',
+      status?.phase ?? 'Unknown',
+      spec?.volumeName ?? 'N/A',
+      `${spec?.resources?.requests?.storage?.number ?? 'N/A'} ${spec?.resources?.requests?.storage.suffix ?? 'N/A'}`,
+      spec?.accessModes?.join(', ') ?? 'N/A',
+      spec?.storageClassName ?? 'N/A',
+      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
+    ];
+    table.rows.push(pvcInfo);
+  });
+
+  return table.toString();
+}
+
+export function getPVList(Volumes: PersistentVolumeList) {
+  const table = new Table();
+  table.theme = Table.roundTheme;
+  table.headers = ['Name', 'Capacity', 'Access Modes', 'Reclaim Policy', 'Status', 'Claim', 'Storage Class', 'Age'];
+
+  Volumes.items.forEach((pv) => {
+    const { metadata, status, spec } = pv;
+    const pvInfo = [
+      metadata?.name ?? 'N/A',
+      `${spec?.capacity?.storage?.number ?? 'N/A'} ${spec?.capacity?.storage.suffix ?? 'N/A'}`,
+      spec?.accessModes?.join(', ') ?? 'N/A',
+      spec?.persistentVolumeReclaimPolicy ?? 'N/A',
+      status?.phase ?? 'Unknown',
+      `${spec?.claimRef?.namespace ?? 'N/A'}/${spec?.claimRef?.name ?? 'N/A'}`,
+      spec?.storageClassName ?? 'N/A',
+      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
+    ];
+    table.rows.push(pvInfo);
+  });
+
+  return table.toString();
 }

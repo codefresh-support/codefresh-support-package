@@ -18,6 +18,7 @@
     "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.5.2",
     "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.7.3",
     "@fakoua/zip-ts": "jsr:@fakoua/zip-ts@^1.3.1",
+    "@sauber/table": "jsr:@sauber/table@^0.1.0",
     "@std/encoding": "jsr:@std/encoding@^1.0.5",
     "@std/tar": "jsr:@std/tar@^0.1.2",
     "@std/yaml": "jsr:@std/yaml@^1.0.5",
