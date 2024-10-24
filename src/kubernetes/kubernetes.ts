@@ -1,5 +1,5 @@
-import type { EventList, PodList, SecretList, PersistentVolumeClaimList, PersistentVolumeList } from '../deps.ts';
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, ungzip, Table } from '../deps.ts';
+import type { EventList, PersistentVolumeClaimList, PersistentVolumeList, PodList, SecretList } from '../deps.ts';
+import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, Table, ungzip } from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -15,10 +15,10 @@ export async function selectNamespace() {
     console.log(`${index + 1}. ${namespace.metadata?.name}`);
   });
 
-  let selection = Number(prompt('\nWhich Namespace Is The GitOps Runtime Installed In? (Number): '));
+  let selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
   while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
     console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
-    selection = Number(prompt('\nWhich Namespace Is The GitOps Runtime Installed In? (Number): '));
+    selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
   }
 
   const namespace = namespaceList.items[selection - 1].metadata?.name;
@@ -34,7 +34,7 @@ export function getK8sResources(runtimeType: RuntimeType, namespace: string) {
   switch (runtimeType) {
     case RuntimeType.pipelines:
       return {
-        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
         'Jobs': batchApi.namespace(namespace).getJobList(),
         'Deployments': appsApi.namespace(namespace).getDeploymentList(),
         'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
@@ -52,7 +52,7 @@ export function getK8sResources(runtimeType: RuntimeType, namespace: string) {
       return {
         'Apps': argoProj.namespace(namespace).getApplicationList(),
         'AppSets': argoProj.namespace(namespace).getApplicationSetList(),
-        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
         'Jobs': batchApi.namespace(namespace).getJobList(),
         'Deployments': appsApi.namespace(namespace).getDeploymentList(),
         'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
@@ -66,7 +66,7 @@ export function getK8sResources(runtimeType: RuntimeType, namespace: string) {
       };
     case RuntimeType.onprem:
       return {
-        'Cron': batchApi.namespace(namespace).getCronJobList(),
+        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
         'Jobs': batchApi.namespace(namespace).getJobList(),
         'Deployments': appsApi.namespace(namespace).getDeploymentList(),
         'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
@@ -143,7 +143,7 @@ export function getHelmReleases(secrets: SecretList) {
 
 export async function describeK8sResources(resourceType: string, namespace: string, name: string) {
   const describe = new Deno.Command('kubectl', { args: ['describe', resourceType.toLowerCase(), '-n', namespace, name] });
-  
+
   return new TextDecoder().decode((await describe.output()).stdout);
 }
 
@@ -159,12 +159,11 @@ export function getPodList(pods: PodList) {
   table.theme = Table.roundTheme;
   table.headers = ['Name', 'Ready', 'Status', 'Restarts', 'Age'];
 
-
   pods.items.forEach((pod) => {
     const { metadata, status } = pod;
     const podInfo = [
       metadata?.name ?? 'N/A',
-      `${status?.containerStatuses?.filter(cs => cs.ready).length ?? 0}/${status?.containerStatuses?.length ?? 0}`,
+      `${status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${status?.containerStatuses?.length ?? 0}`,
       status?.phase ?? 'Unknown',
       status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0,
       metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',

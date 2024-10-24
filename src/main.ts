@@ -1,22 +1,20 @@
-import { getUserRuntimeSelection, RuntimeType } from './deps.ts';
+import { autoDetectCodefreshClient, getUserRuntimeSelection, gitopsRuntime, onPrem, pipelinesRuntime, RuntimeType } from './deps.ts';
 
 async function main() {
   try {
     const runtimeTypes = Object.values(RuntimeType);
     const runtimeSelected = getUserRuntimeSelection(runtimeTypes);
+    const cfConfig = await autoDetectCodefreshClient();
 
     switch (runtimeSelected) {
       case RuntimeType.pipelines:
-        // await pipelines();
-        console.log('Pipelines Runtime');
+        await pipelinesRuntime(cfConfig);
         break;
       case RuntimeType.gitops:
-        // await gitops();
-        console.log('GitOps Runtime');
+        await gitopsRuntime();
         break;
       case RuntimeType.onprem:
-        // await onprem();
-        console.log('On-Prem Runtime');
+        await onPrem(cfConfig);
         break;
     }
   } catch (error) {
