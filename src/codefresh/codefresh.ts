@@ -43,6 +43,6 @@ export async function autoDetectCodefreshClient() {
   const headers = {
     Authorization: await getCodefreshCredentials('CF_API_KEY', ContextKeys.Token),
   };
-  const baseUrl = await getCodefreshCredentials('CF_BASE_URL', ContextKeys.Url);
+  const baseUrl = `${await getCodefreshCredentials('CF_BASE_URL', ContextKeys.Url)}/api`;
   return { headers, baseUrl };
 }

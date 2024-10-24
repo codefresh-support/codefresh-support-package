@@ -47,22 +47,19 @@ export async function prepareAndCleanup() {
 export async function fetchAndSaveData(type: RuntimeType, namespace: string) {
   await Deno.mkdir(`${dirPath}/`, { recursive: true });
 
-  const runtimeResources = await getK8sResources(type, namespace);
+  for (const [itemType, fetcher] of Object.entries(getK8sResources(type, namespace) || {})) {
+    const resources = await fetcher();
 
-  if (!runtimeResources) {
-    console.error('Unable to get resources');
-    return;
-  }
-
-  for (const [itemType, resources] of Object.entries(runtimeResources)) {
     if (itemType === 'Events') {
       const formattedEvents = getFormattedEvents(resources);
       await Deno.writeTextFile(`${dirPath}/Events.txt`, formattedEvents);
+      continue;
     }
 
     if (itemType === 'HelmReleases') {
       const helmReleases = getHelmReleases(resources);
-      await Deno.writeTextFile(`${dirPath}/HelmReleases.txt`, JSON.stringify(helmReleases, null, 2));
+      await writeCodefreshFiles(helmReleases, 'HelmReleases');
+      continue;
     }
 
     await creatDirectory(itemType);

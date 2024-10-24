@@ -1,5 +1,17 @@
 import type { EventList, PersistentVolumeClaimList, PersistentVolumeList, PodList, SecretList } from '../deps.ts';
-import { AppsV1Api, ArgoprojIoV1alpha1Api, autoDetectClient, BatchV1Api, CoreV1Api, decodeBase64, RuntimeType, StorageV1Api, Table, ungzip } from '../deps.ts';
+
+import { 
+  AppsV1Api, 
+  ArgoprojIoV1alpha1Api, 
+  autoDetectClient, 
+  BatchV1Api, 
+  CoreV1Api, 
+  decodeBase64, 
+  RuntimeType, 
+  StorageV1Api, 
+  Table, 
+  ungzip,
+} from '../deps.ts';
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -34,51 +46,51 @@ export function getK8sResources(runtimeType: RuntimeType, namespace: string) {
   switch (runtimeType) {
     case RuntimeType.pipelines:
       return {
-        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': batchApi.namespace(namespace).getJobList(),
-        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': coreApi.getNodeList(),
-        'Volumes': coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
-        'Services': coreApi.namespace(namespace).getServiceList(),
-        'Pods': coreApi.namespace(namespace).getPodList(),
-        'Storageclass': storageApi.getStorageClassList(),
-        'Events': coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
+        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': () => batchApi.namespace(namespace).getJobList(),
+        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
+        'Nodes': () => coreApi.getNodeList(),
+        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
+        'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
+        'Services': () => coreApi.namespace(namespace).getServiceList(),
+        'Pods': () => coreApi.namespace(namespace).getPodList(),
+        'Storageclass': () => storageApi.getStorageClassList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     case RuntimeType.gitops:
       return {
-        'Apps': argoProj.namespace(namespace).getApplicationList(),
-        'AppSets': argoProj.namespace(namespace).getApplicationSetList(),
-        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': batchApi.namespace(namespace).getJobList(),
-        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
-        'Statefulsets': appsApi.namespace(namespace).getStatefulSetList(),
-        'Nodes': coreApi.getNodeList(),
-        'Configmaps': coreApi.namespace(namespace).getConfigMapList(),
-        'Services': coreApi.namespace(namespace).getServiceList(),
-        'Pods': coreApi.namespace(namespace).getPodList(),
-        'Events': coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
+        'Apps': () => argoProj.namespace(namespace).getApplicationList(),
+        'AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
+        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': () => batchApi.namespace(namespace).getJobList(),
+        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
+        'Statefulsets': () => appsApi.namespace(namespace).getStatefulSetList(),
+        'Nodes': () => coreApi.getNodeList(),
+        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
+        'Services': () => coreApi.namespace(namespace).getServiceList(),
+        'Pods': () => coreApi.namespace(namespace).getPodList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     case RuntimeType.onprem:
       return {
-        'CronJobs': batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': batchApi.namespace(namespace).getJobList(),
-        'Deployments': appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': coreApi.getNodeList(),
-        'Volumes': coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': coreApi.namespace(namespace).getConfigMapList(),
-        'Services': coreApi.namespace(namespace).getServiceList(),
-        'Pods': coreApi.namespace(namespace).getPodList(),
-        'Storageclass': storageApi.getStorageClassList(),
-        'Events': coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
+        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
+        'Jobs': () => batchApi.namespace(namespace).getJobList(),
+        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
+        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
+        'Nodes': () => coreApi.getNodeList(),
+        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
+        'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
+        'Services': () => coreApi.namespace(namespace).getServiceList(),
+        'Pods': () => coreApi.namespace(namespace).getPodList(),
+        'Storageclass': () => storageApi.getStorageClassList(),
+        'Events': () => coreApi.namespace(namespace).getEventList(),
+        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
       };
     default:
       console.error('Invalid runtime type selected');
@@ -103,15 +115,25 @@ export function getFormattedEvents(events: EventList) {
     return dateA - dateB;
   });
 
-  // Format the output to match kubectl style
   const formattedEvents = sortedEvents.map((event) => {
-    const { lastTimestamp, type, reason, message, involvedObject } = event;
-    const { name, kind } = involvedObject;
-    const lastSeen = lastTimestamp ? calculateAge(lastTimestamp) : 'N/A';
-    return `${lastSeen}\t${type}\t${reason}\t${kind}\t${name}\t${message}`;
+    const lastSeen = event.lastTimestamp ? calculateAge(event.lastTimestamp) : 'N/A';
+    const type = event.type ?? 'N/A';
+    const reason = event.reason ?? 'N/A';
+    const kind = event.involvedObject.kind ?? 'N/A';
+    const name = event.involvedObject.name ?? 'N/A';
+    const message = event.message ?? 'N/A';
+    return {
+      lastSeen,
+      type,
+      reason,
+      kind,
+      name,
+      message,
+    }
   });
-
-  return formattedEvents.join('\n');
+  const table = new Table();
+  table.fromJson(formattedEvents);
+  return table.toString();
 }
 
 export function getHelmReleases(secrets: SecretList) {
@@ -139,7 +161,7 @@ export function getHelmReleases(secrets: SecretList) {
   return helmReleases;
 }
 
-// TODO: // convert using the kubernetes sdk
+// TODO: convert using the kubernetes sdk
 
 export async function describeK8sResources(resourceType: string, namespace: string, name: string) {
   const describe = new Deno.Command('kubectl', { args: ['describe', resourceType.toLowerCase(), '-n', namespace, name] });
@@ -155,66 +177,73 @@ export async function getK8sLogs(namespace: string, podName: string, containerNa
 }
 
 export function getPodList(pods: PodList) {
-  const table = new Table();
-  table.theme = Table.roundTheme;
-  table.headers = ['Name', 'Ready', 'Status', 'Restarts', 'Age'];
-
-  pods.items.forEach((pod) => {
-    const { metadata, status } = pod;
-    const podInfo = [
-      metadata?.name ?? 'N/A',
-      `${status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${status?.containerStatuses?.length ?? 0}`,
-      status?.phase ?? 'Unknown',
-      status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0,
-      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
-    ];
-    table.rows.push(podInfo);
+  const podList = pods.items.map((pod) => {
+    const name = pod.metadata?.name ?? 'N/A';
+    const ready = `${pod.status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${pod.status?.containerStatuses?.length ?? 0}`;
+    const status = pod.status?.phase ?? 'Unknown';
+    const restarts = pod.status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0;
+    const age = pod.metadata?.creationTimestamp ? calculateAge(pod.metadata.creationTimestamp) : 'N/A';
+    return {
+      name,
+      ready,
+      status,
+      restarts,
+      age,
+    };
   });
-
+  const table = new Table();
+  table.fromJson(podList);
   return table.toString();
 }
 
 export function getPVCList(Volumeclaims: PersistentVolumeClaimList) {
-  const table = new Table();
-  table.theme = Table.roundTheme;
-  table.headers = ['Name', 'Status', 'Volume', 'Capacity', 'Access Modes', 'Storage Class', 'Age'];
-
-  Volumeclaims.items.forEach((pvc) => {
-    const { metadata, status, spec } = pvc;
-    const pvcInfo = [
-      metadata?.name ?? 'N/A',
-      status?.phase ?? 'Unknown',
-      spec?.volumeName ?? 'N/A',
-      `${spec?.resources?.requests?.storage?.number ?? 'N/A'} ${spec?.resources?.requests?.storage.suffix ?? 'N/A'}`,
-      spec?.accessModes?.join(', ') ?? 'N/A',
-      spec?.storageClassName ?? 'N/A',
-      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
-    ];
-    table.rows.push(pvcInfo);
+  const fromattedPVC = Volumeclaims.items.map((pvc) => {
+    const name = pvc.metadata?.name ?? 'N/A';
+    const status = pvc.status?.phase ?? 'Unknown';
+    const volume = pvc.spec?.volumeName ?? 'N/A';
+    const capacity = `${pvc.spec?.resources?.requests?.storage?.number ?? 'N/A'} ${pvc.spec?.resources?.requests?.storage.suffix ?? 'N/A'}`;
+    const accessModes = pvc.spec?.accessModes?.join(', ') ?? 'N/A';
+    const storageClass = pvc.spec?.storageClassName ?? 'N/A';
+    const age = pvc.metadata?.creationTimestamp ? calculateAge(pvc.metadata.creationTimestamp) : 'N/A';
+    return {
+      name,
+      status,
+      volume,
+      capacity,
+      accessModes,
+      storageClass,
+      age,
+    };
   });
 
+  const table = new Table();
+  table.fromJson(fromattedPVC);
   return table.toString();
 }
 
 export function getPVList(Volumes: PersistentVolumeList) {
-  const table = new Table();
-  table.theme = Table.roundTheme;
-  table.headers = ['Name', 'Capacity', 'Access Modes', 'Reclaim Policy', 'Status', 'Claim', 'Storage Class', 'Age'];
-
-  Volumes.items.forEach((pv) => {
-    const { metadata, status, spec } = pv;
-    const pvInfo = [
-      metadata?.name ?? 'N/A',
-      `${spec?.capacity?.storage?.number ?? 'N/A'} ${spec?.capacity?.storage.suffix ?? 'N/A'}`,
-      spec?.accessModes?.join(', ') ?? 'N/A',
-      spec?.persistentVolumeReclaimPolicy ?? 'N/A',
-      status?.phase ?? 'Unknown',
-      `${spec?.claimRef?.namespace ?? 'N/A'}/${spec?.claimRef?.name ?? 'N/A'}`,
-      spec?.storageClassName ?? 'N/A',
-      metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A',
-    ];
-    table.rows.push(pvInfo);
+  const formatedPV = Volumes.items.map((pv) => {
+    const name = pv.metadata?.name ?? 'N/A';
+    const capacity = `${pv.spec?.capacity?.storage?.number ?? 'N/A'} ${pv.spec?.capacity?.storage.suffix ?? 'N/A'}`;
+    const accessModes = pv.spec?.accessModes?.join(', ') ?? 'N/A';
+    const reclaimPolicy = pv.spec?.persistentVolumeReclaimPolicy ?? 'N/A';
+    const status = pv.status?.phase ?? 'Unknown';
+    const claim = `${pv.spec?.claimRef?.namespace ?? 'N/A'}/${pv.spec?.claimRef?.name ?? 'N/A'}`;
+    const storageClass = pv.spec?.storageClassName ?? 'N/A';
+    const age = pv.metadata?.creationTimestamp ? calculateAge(pv.metadata.creationTimestamp) : 'N/A';
+    return {
+      name,
+      capacity,
+      accessModes,
+      reclaimPolicy,
+      status,
+      claim,
+      storageClass,
+      age,
+    };
   });
 
+  const table = new Table();
+  table.fromJson(formatedPV);
   return table.toString();
 }

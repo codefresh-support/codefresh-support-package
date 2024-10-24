@@ -9,7 +9,7 @@ export { ungzip } from 'pako';
 export { compress } from '@fakoua/zip-ts';
 export { parse, stringify as toYaml } from '@std/yaml';
 export { decodeBase64 } from '@std/encoding';
-export { Table } from '@sauber/table';
+export { Table } from '@cliffy/table';
 
 // Internal dependencies
 export { getUserRuntimeSelection, RuntimeType } from './codefresh/runtime-type.ts';
