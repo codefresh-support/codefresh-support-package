@@ -300,10 +300,3 @@ export function getPVList(Volumes: PersistentVolumeList) {
   table.fromJson(formattedPV);
   return table.toString();
 }
-
-export async function cleanTestPipelinePods(namespace: string, buildID: string) {
-  await Promise.all([
-    coreApi.namespace(namespace).deletePod(`dind-${buildID}`),
-    coreApi.namespace(namespace).deletePod(`engine-${buildID}`),
-  ]);
-}

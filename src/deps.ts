@@ -21,7 +21,6 @@ export { Table } from '@cliffy/table';
 export { getUserRuntimeSelection, RuntimeType } from './codefresh/runtime-type.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
 export {
-  cleanTestPipelinePods,
   describeK8sResources,
   getFormattedEvents,
   getHelmReleases,

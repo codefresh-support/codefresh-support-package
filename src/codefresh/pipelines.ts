@@ -1,4 +1,4 @@
-import { fetchAndSaveData, prepareAndCleanup, RuntimeType, writeCodefreshFiles, cleanTestPipelinePods } from '../deps.ts';
+import { fetchAndSaveData, prepareAndCleanup, RuntimeType, writeCodefreshFiles } from '../deps.ts';
 
 async function getRuntimes(config: { headers: { Authorization: string }; baseUrl: string }) {
   const response = await fetch(`${config.baseUrl}/runtime-environments`, {
@@ -36,7 +36,7 @@ async function runTestPipeline(
     version: '1.0',
     kind: 'pipeline',
     metadata: {
-      name: 'codefresh-support-package/demo-pipeline',
+      name: 'codefresh-support-package/TEST-PIPELINE-FOR-SUPPORT',
       project: 'codefresh-support-package',
       originalYamlString:
         'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"',
@@ -100,7 +100,7 @@ async function runTestPipeline(
 
   console.log(`Demo pipeline created and running build with id of ${runPipelineStatus}.`);
 
-  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id, buildID: runPipelineStatus };
+  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
 }
 
 async function deleteTestPipeline(
@@ -160,10 +160,7 @@ export async function pipelinesRuntime(config: { headers: { Authorization: strin
     console.log('Data Gathered Successfully.');
 
     if (pipelineExecutionOutput) {
-      await Promise.all([
-        deleteTestPipeline(config, pipelineExecutionOutput?.pipelineID, pipelineExecutionOutput?.projectID),
-        cleanTestPipelinePods(namespace, pipelineExecutionOutput?.buildID),
-      ]);
+        await deleteTestPipeline(config, pipelineExecutionOutput?.pipelineID, pipelineExecutionOutput?.projectID);
     }
 
     await prepareAndCleanup();
