@@ -19,7 +19,7 @@ async function getAllRuntimes(config: { headers: { Authorization: string }; base
 }
 
 async function getTotalUsers(config: { headers: { Authorization: string }; baseUrl: string }) {
-  const response = await fetch(`${config.baseUrl}/admin/users?limit=1&page=1`, {
+  const response = await fetch(`${config.baseUrl}/admin/user?limit=1&page=1`, {
     method: 'GET',
     headers: config.headers,
   });
@@ -37,6 +37,11 @@ async function getSystemFeatureFlags(config: { headers: { Authorization: string 
 }
 
 export async function onPrem(config: { headers: { Authorization: string }; baseUrl: string }) {
+  if (config.baseUrl === "https://g.codefresh.io/api") {
+    console.error(`\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeType.pipelines} or ${RuntimeType.gitops}.`);
+    console.error('If you need to gather data for Codefresh On-Prem, please update your ./cfconfig conext (or Envs) to point to an On-Prem instance.');
+    Deno.exit(40);
+  }
   try {
     const namespace = await selectNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
@@ -50,6 +55,6 @@ export async function onPrem(config: { headers: { Authorization: string }; baseU
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
-    console.error(`Error gathering GitOps runtime data:`, error);
+    console.error(`Error gathering On-Prem data:`, error);
   }
 }
