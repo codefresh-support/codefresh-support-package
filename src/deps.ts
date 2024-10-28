@@ -2,7 +2,13 @@ export { autoDetectClient } from '@cloudydeno/kubernetes-client';
 export { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
 export { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
 export { CoreV1Api } from '@cloudydeno/kubernetes-apis/core/v1';
-export type { EventList, PersistentVolumeClaimList, PersistentVolumeList, PodList, SecretList } from '@cloudydeno/kubernetes-apis/core/v1';
+export type {
+  EventList,
+  PersistentVolumeClaimList,
+  PersistentVolumeList,
+  PodList,
+  SecretList,
+} from '@cloudydeno/kubernetes-apis/core/v1';
 export { StorageV1Api } from '@cloudydeno/kubernetes-apis/storage.k8s.io/v1';
 export { ArgoprojIoV1alpha1Api } from '@cloudydeno/kubernetes-apis/argoproj.io/v1alpha1';
 export { ungzip } from 'pako';
@@ -15,6 +21,7 @@ export { Table } from '@cliffy/table';
 export { getUserRuntimeSelection, RuntimeType } from './codefresh/runtime-type.ts';
 export { autoDetectCodefreshClient } from './codefresh/codefresh.ts';
 export {
+  cleanTestPipelinePods,
   describeK8sResources,
   getFormattedEvents,
   getHelmReleases,

@@ -79,5 +79,6 @@ chmod +x cf-support
 
 ## Exit Codes
 
-- 10 - Failed to get codefresh credentials. Please set the enviroment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid codefresh config
-  file.
+- 10 - Failed to get codefresh credentials. Please set the enviroment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid codefresh config file.
+- 20 - Failed to Create Demo Pipeline / Project or Failed to run Demo Pipeline.
+- 30 - Failed to Delete Demo Pipeline / Project

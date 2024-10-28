@@ -1,14 +1,13 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "denoland/deno:2.0.0",
+  "image": "denoland/deno:2.0.3",
   "onCreateCommand": "apt-get update && apt-get install git zip -y",
   "customizations": {
     "vscode": {
       "settings": {
         "deno.enable": true,
-        "deno.lint": true,
-        "deno.unstable": false
+        "deno.lint": true
       },
       "extensions": [
         "denoland.vscode-deno",

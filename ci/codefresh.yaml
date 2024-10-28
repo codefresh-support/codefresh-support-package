@@ -20,7 +20,7 @@ steps:
     title: Compiling
     stage: Build
     arguments:
-      image: denoland/deno:alpine-2.0.0
+      image: denoland/deno:alpine-2.0.3
       commands:
         - cf_export VERSION=$(cat VERSION)
         - deno task compile

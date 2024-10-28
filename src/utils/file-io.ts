@@ -35,10 +35,10 @@ async function writeGetApiCalls(resources: any, path: string) {
 }
 
 export async function prepareAndCleanup() {
-  console.log(`\nSaving data to ./codefresh-support-package-${timestamp}.zip`);
+  console.log(`Saving data to ./codefresh-support-package-${timestamp}.zip`);
   await compress(dirPath, `./codefresh-support-package-${timestamp}.zip`, { overwrite: true });
 
-  console.log('\nCleaning up temp directory');
+  console.log('Cleaning up temp directory');
   await Deno.remove(dirPath, { recursive: true });
 
   console.log(`\nPlease attach ./codefresh-support-package-${timestamp}.zip to your support ticket.`);
@@ -68,16 +68,18 @@ export async function fetchAndSaveData(type: RuntimeType, namespace: string) {
       const podList = getPodList(resources);
       await Deno.writeTextFile(`${dirPath}/PodList.txt`, podList);
 
-      await Promise.all(resources.items.map(async (resource: { metadata: { name: string }; spec: { containers: any } }) => {
-        const podName = resource.metadata.name;
-        const containers = resource.spec.containers;
+      await Promise.all(
+        resources.items.map(async (resource: { metadata: { name: string }; spec: { containers: any } }) => {
+          const podName = resource.metadata.name;
+          const containers = resource.spec.containers;
 
-        await Promise.all(containers.map(async (container: { name: string }) => {
-          const log = await getK8sLogs(namespace, podName, container.name);
-          const logFileName = `${dirPath}/${itemType}/${podName}_${container.name}_log.log`;
-          await Deno.writeTextFile(logFileName, log);
-        }));
-      }));
+          await Promise.all(containers.map(async (container: { name: string }) => {
+            const log = await getK8sLogs(namespace, podName, container.name);
+            const logFileName = `${dirPath}/${itemType}/${podName}_${container.name}_log.log`;
+            await Deno.writeTextFile(logFileName, log);
+          }));
+        }),
+      );
     }
 
     if (itemType === 'Volumeclaims') {

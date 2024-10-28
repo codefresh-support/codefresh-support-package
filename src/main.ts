@@ -1,4 +1,11 @@
-import { autoDetectCodefreshClient, getUserRuntimeSelection, gitopsRuntime, onPrem, pipelinesRuntime, RuntimeType } from './deps.ts';
+import {
+  autoDetectCodefreshClient,
+  getUserRuntimeSelection,
+  gitopsRuntime,
+  onPrem,
+  pipelinesRuntime,
+  RuntimeType,
+} from './deps.ts';
 
 async function main() {
   try {
