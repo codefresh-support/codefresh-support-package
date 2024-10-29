@@ -83,7 +83,7 @@ async function runTestPipeline(
     Deno.exit(20);
   }
 
-  const runPipelineResponse = await fetch(`${config.baseUrl}/pipelines/run/codefresh-support-package%2Fdemo-pipeline`, {
+  const runPipelineResponse = await fetch(`${config.baseUrl}/pipelines/run/${pipelineStatus.metadata.id}`, {
     method: 'POST',
     headers: {
       ...config.headers,
