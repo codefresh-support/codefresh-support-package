@@ -76,3 +76,10 @@ chmod +x cf-support
 1. Go the the [Latest](https://github.com/codefresh-support/codefresh-support-package/releases/latest) release.
 1. Download the cf-support_windows_x86_64.zip file
 1. Run the `.exe` file via CMD or PowerShell
+
+## Exit Codes
+
+- 10 - Failed to get codefresh credentials. Please set the enviroment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid codefresh config file.
+- 20 - Failed to Create Demo Pipeline / Project or Failed to run Demo Pipeline.
+- 30 - Failed to Delete Demo Pipeline / Project
+- 40 - Invalid Runtime Type. ex: Selecting On-Prem for a SaaS Account.
