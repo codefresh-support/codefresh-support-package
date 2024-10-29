@@ -37,9 +37,13 @@ async function getSystemFeatureFlags(config: { headers: { Authorization: string 
 }
 
 export async function onPrem(config: { headers: { Authorization: string }; baseUrl: string }) {
-  if (config.baseUrl === "https://g.codefresh.io/api") {
-    console.error(`\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeType.pipelines} or ${RuntimeType.gitops}.`);
-    console.error('If you need to gather data for Codefresh On-Prem, please update your ./cfconfig conext (or Envs) to point to an On-Prem instance.');
+  if (config.baseUrl === 'https://g.codefresh.io/api') {
+    console.error(
+      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeType.pipelines} or ${RuntimeType.gitops}.`,
+    );
+    console.error(
+      'If you need to gather data for Codefresh On-Prem, please update your ./cfconfig conext (or Envs) to point to an On-Prem instance.',
+    );
     Deno.exit(40);
   }
   try {

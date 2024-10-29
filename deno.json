@@ -4,7 +4,11 @@
     "lineWidth": 120,
     "singleQuote": true,
     "semiColons": true,
-    "exclude": [".devcontainer/**", "README.md", "ci/**"]
+    "exclude": [
+      ".devcontainer/**",
+      "README.md",
+      "ci/**"
+    ]
   },
   "tasks": {
     "pre-compile": "rm -rf ./bin && mkdir ./bin",
@@ -20,7 +24,6 @@
     "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.7.3",
     "@fakoua/zip-ts": "jsr:@fakoua/zip-ts@^1.3.1",
     "@std/encoding": "jsr:@std/encoding@^1.0.5",
-    "@std/tar": "jsr:@std/tar@^0.1.2",
     "@std/yaml": "jsr:@std/yaml@^1.0.5",
     "pako": "npm:pako@^2.1.0"
   }

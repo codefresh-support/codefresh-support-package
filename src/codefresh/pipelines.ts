@@ -10,8 +10,8 @@ async function getRuntimes(config: { headers: { Authorization: string }; baseUrl
 }
 
 async function runTestPipeline(
-  config: { headers: { Authorization: string }; baseUrl: string }, 
-  runtimeName: string
+  config: { headers: { Authorization: string }; baseUrl: string },
+  runtimeName: string,
 ) {
   let selection = String(
     prompt(
@@ -151,16 +151,16 @@ export async function pipelinesRuntime(config: { headers: { Authorization: strin
     const pipelineExecutionOutput = await runTestPipeline(config, reSpec.metadata.name);
 
     console.log(`\nGathering Data For ${reSpec.metadata.name} in the "${namespace}" namespace.`);
-    
+
     // Wait 15 seconds to allow the pipeline to run
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    await new Promise((resolve) => setTimeout(resolve, 15000));
 
     await fetchAndSaveData(RuntimeType.pipelines, namespace);
     await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
     console.log('Data Gathered Successfully.');
 
     if (pipelineExecutionOutput) {
-        await deleteTestPipeline(config, pipelineExecutionOutput?.pipelineID, pipelineExecutionOutput?.projectID);
+      await deleteTestPipeline(config, pipelineExecutionOutput?.pipelineID, pipelineExecutionOutput?.projectID);
     }
 
     await prepareAndCleanup();
