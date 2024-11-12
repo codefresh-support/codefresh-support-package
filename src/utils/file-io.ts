@@ -85,14 +85,14 @@ export async function fetchAndSaveData(type: RuntimeType, namespace: string) {
     if (itemType === 'Volumeclaims') {
       const pvcList = getPVCList(resources);
       await Deno.writeTextFile(`${dirPath}/VolumeClaimsList.txt`, pvcList);
-      await writeGetApiCalls(resources.items, itemType);
+      // await writeGetApiCalls(resources.items, itemType);
       continue;
     }
 
     if (itemType === 'Volumes') {
       const pvList = getPVList(resources);
       await Deno.writeTextFile(`${dirPath}/VolumesList.txt`, pvList);
-      await writeGetApiCalls(resources.items, itemType);
+      // await writeGetApiCalls(resources.items, itemType);
       continue;
     }
 
