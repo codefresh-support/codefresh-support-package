@@ -518,7 +518,7 @@ async function gatherPipelinesRuntime(config) {
 // ##############################
 // CODEFRESH GITOPS
 // ##############################
-async function gitopsRuntime() {
+async function gatherGitopsRuntime() {
   try {
     const namespace = await selectNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
@@ -569,7 +569,7 @@ async function getSystemFeatureFlags(config) {
   await writeCodefreshFiles(onPremSystemFF, 'onPrem-systemFeatureFlags');
 }
 
-async function onPrem(config) {
+async function gatherOnPrem(config) {
   if (config.baseUrl === 'https://g.codefresh.io/api') {
     console.error(
       `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeTypes.pipelines} or ${RuntimeTypes.gitops}.`,
@@ -716,10 +716,10 @@ async function main() {
         await gatherPipelinesRuntime(cfConfig);
         break;
       case RuntimeTypes.gitops:
-        await gitopsRuntime();
+        await gatherGitopsRuntime();
         break;
       case RuntimeTypes.onprem:
-        await onPrem(cfConfig);
+        await gatherOnPrem(cfConfig);
         break;
     }
   } catch (error) {
