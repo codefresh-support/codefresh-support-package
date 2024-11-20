@@ -11,6 +11,7 @@ import { compress } from '@fakoua/zip-ts';
 import { parse, stringify as toYaml } from '@std/yaml';
 import { decodeBase64 } from '@std/encoding';
 import { Table } from '@cliffy/table';
+import { getSemaphore } from '@henrygd/semaphore';
 
 const RuntimeTypes = {
   pipelines: 'Pipelines Runtime',
@@ -20,6 +21,7 @@ const RuntimeTypes = {
 
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
+const numOfProcesses = 5;
 
 const kubeConfig = await autoDetectClient();
 const appsApi = new AppsV1Api(kubeConfig);
@@ -337,7 +339,7 @@ async function getCodefreshCredentials() {
 
     return {
       headers: { Authorization: config.contexts[config['current-context']]['token'] },
-      baseUrl: `${config.contexts[config['current-context']]['token']}/api`,
+      baseUrl: `${config.contexts[config['current-context']]['url']}/api`,
     };
   } catch (error) {
     console.error('Failed to get Codefresh credentials:', error);
@@ -391,16 +393,19 @@ async function runTestPipeline(config, runtimeName) {
 
   console.log(`\nCreating a demo pipeline to test the ${runtimeName} runtime.`);
 
+  const projectName = 'codefresh-support-package';
+  const pipelineName = 'TEST-PIPELINE-FOR-SUPPORT';
+
   const project = JSON.stringify({
-    projectName: 'codefresh-support-package',
+    projectName: projectName,
   });
 
   const pipeline = JSON.stringify({
     version: '1.0',
     kind: 'pipeline',
     metadata: {
-      name: 'codefresh-support-package/TEST-PIPELINE-FOR-SUPPORT',
-      project: 'codefresh-support-package',
+      name: `${projectName}/${pipelineName}`,
+      project: projectName,
       originalYamlString:
         'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"',
     },
@@ -426,6 +431,12 @@ async function runTestPipeline(config, runtimeName) {
   if (!createProjectResponse.ok) {
     console.error('Error creating project:', createProjectResponse.statusText);
     console.error(projectStatus);
+    const getProjectID = await fetch(`${config.baseUrl}/projects/name/${projectName}`, {
+      method: 'GET',
+      headers: config.headers,
+    });
+    const projectResponse = await getProjectID.json();
+    projectStatus.id = projectResponse.id;
   }
 
   const createPipelineResponse = await fetch(`${config.baseUrl}/pipelines`, {
@@ -442,6 +453,13 @@ async function runTestPipeline(config, runtimeName) {
   if (!createPipelineResponse.ok) {
     console.error('Error creating pipeline:', createPipelineResponse.statusText);
     console.error(pipelineStatus);
+    const getPipelineID = await fetch(`${config.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
+      method: 'GET',
+      headers: config.headers,
+    });
+    const pipelineResponse = await getPipelineID.json();
+    pipelineStatus.metadata = {};
+    pipelineStatus.metadata.id = pipelineResponse.metadata.id;
   }
 
   const runPipelineResponse = await fetch(`${config.baseUrl}/pipelines/run/${pipelineStatus.metadata.id}`, {
@@ -457,7 +475,7 @@ async function runTestPipeline(config, runtimeName) {
   if (!runPipelineResponse.ok) {
     console.error('Error running pipeline:', runPipelineResponse.statusText);
     console.error(runPipelineStatus);
-    return { pipelineID: null, projectID: null };
+    return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
   }
 
   console.log(`Demo pipeline created and running build with id of ${runPipelineStatus}.`);
@@ -489,7 +507,7 @@ async function deleteTestPipeline(config, pipelineID, projectID) {
   console.log('Demo pipeline and project deleted successfully.');
 }
 
-async function pipelinesRuntime(config) {
+async function gatherPipelinesRuntime(config) {
   try {
     const runtimes = await getAccountRuntimes(config);
     console.log('');
@@ -497,29 +515,37 @@ async function pipelinesRuntime(config) {
       console.log(`${index + 1}. ${re.metadata.name}`);
     });
 
-    if (runtimes.length === 0) {
-      console.error('No Pipelines Runtimes Found.');
-      Deno.exit(1);
+    let namespace;
+    let reSpec;
+    let pipelineExecutionOutput;
+
+    if (runtimes.length !== 0) {
+      let selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
+      while (isNaN(selection) || selection < 1 || selection > runtimes.length) {
+        console.log('Invalid selection. Please enter a number corresponding to one of the listed runtimes.');
+        selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
+      }
+
+      reSpec = runtimes[selection - 1];
+      namespace = reSpec.runtimeScheduler.cluster.namespace;
+
+      pipelineExecutionOutput = await runTestPipeline(config, reSpec.metadata.name);
+    } else {
+      console.log('No Pipelines Runtimes found in the account.');
+      namespace = await selectNamespace();
     }
 
-    let selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
-    while (isNaN(selection) || selection < 1 || selection > runtimes.length) {
-      console.log('Invalid selection. Please enter a number corresponding to one of the listed runtimes.');
-      selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
-    }
-
-    const reSpec = runtimes[selection - 1];
-    const namespace = reSpec.runtimeScheduler.cluster.namespace;
-
-    const pipelineExecutionOutput = await runTestPipeline(config, reSpec.metadata.name);
-
-    console.log(`\nGathering Data For ${reSpec.metadata.name} in the "${namespace}" namespace.`);
+    console.log(`\nGathering Data For ${reSpec.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`);
 
     // Wait 15 seconds to allow the pipeline to run
     await new Promise((resolve) => setTimeout(resolve, 15000));
 
-    await fetchAndSaveData(RuntimeType.pipelines, namespace);
-    await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
+    await fetchAndSaveData(RuntimeTypes.pipelines, namespace);
+
+    if (reSpec) {
+      await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
+    }
+
     console.log('Data Gathered Successfully.');
 
     if (pipelineExecutionOutput) {
@@ -531,6 +557,7 @@ async function pipelinesRuntime(config) {
     console.error(`Error gathering Pipelines Runtime data:`, error);
   }
 }
+
 // ##############################
 // CODEFRESH GITOPS
 // ##############################
@@ -538,7 +565,7 @@ async function gitopsRuntime() {
   try {
     const namespace = await selectNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
-    await fetchAndSaveData(RuntimeType.gitops, namespace);
+    await fetchAndSaveData(RuntimeTypes.gitops, namespace);
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
@@ -588,7 +615,7 @@ async function getSystemFeatureFlags(config) {
 async function onPrem(config) {
   if (config.baseUrl === 'https://g.codefresh.io/api') {
     console.error(
-      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeType.pipelines} or ${RuntimeType.gitops}.`,
+      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeTypes.pipelines} or ${RuntimeTypes.gitops}.`,
     );
     console.error(
       'If you need to gather data for Codefresh On-Prem, please update your ./cfconfig conext (or Envs) to point to an On-Prem instance.',
@@ -598,7 +625,7 @@ async function onPrem(config) {
   try {
     const namespace = await selectNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
-    await fetchAndSaveData(RuntimeType.onprem, namespace);
+    await fetchAndSaveData(RuntimeTypes.onprem, namespace);
     await Promise.all([
       getAllAccounts(config),
       getAllRuntimes(config),
@@ -624,16 +651,20 @@ async function writeCodefreshFiles(data, name) {
   const fileContent = toYaml(data, { skipInvalid: true });
   await Deno.writeTextFile(filePath, fileContent);
 }
-// removed because it cause issues while saving files.
 
-// async function writeGetApiCalls(resources, path) {
-//   const writePromises = resources.map(async (item) => {
-//     const filePath = `${dirPath}/${path}/${item.metadata.name}_get.yaml`;
-//     const fileContent = toYaml(item, { skipInvalid: true });
-//     await Deno.writeTextFile(filePath, fileContent);
-//   });
-//   await Promise.all(writePromises);
-// }
+async function writeGetApiCalls(resources, path) {
+  const sem = getSemaphore(path, numOfProcesses);
+  await Promise.all(resources.map(async (item) => {
+    await sem.acquire();
+    try {
+      const filePath = `${dirPath}/${path}/${item.metadata.name}_get.yaml`;
+      const fileContent = toYaml(item, { skipInvalid: true });
+      await Deno.writeTextFile(filePath, fileContent);
+    } finally {
+      sem.release();
+    }
+  }));
+}
 
 async function prepareAndCleanup() {
   console.log(`Saving data to ./codefresh-support-package-${timestamp}.zip`);
@@ -686,21 +717,27 @@ export async function fetchAndSaveData(type, namespace) {
     if (itemType === 'Volumeclaims') {
       const pvcList = getPVCList(resources);
       await Deno.writeTextFile(`${dirPath}/VolumeClaimsList.txt`, pvcList);
-      // await writeGetApiCalls(resources.items, itemType);
+      await writeGetApiCalls(resources.items, itemType);
       continue;
     }
 
     if (itemType === 'Volumes') {
       const pvList = getPVList(resources);
       await Deno.writeTextFile(`${dirPath}/VolumesList.txt`, pvList);
-      // await writeGetApiCalls(resources.items, itemType);
+      await writeGetApiCalls(resources.items, itemType);
       continue;
     }
 
+    const sem = getSemaphore(itemType, numOfProcesses);
     await Promise.all(resources.items.map(async (resource) => {
-      const describeOutput = await describeK8sResources(itemType, namespace, resource.metadata.name);
-      const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}_describe.yaml`;
-      await Deno.writeTextFile(describeFileName, describeOutput);
+      await sem.acquire();
+      try {
+        const describeOutput = await describeK8sResources(itemType, namespace, resource.metadata.name);
+        const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}_describe.yaml`;
+        await Deno.writeTextFile(describeFileName, describeOutput);
+      } finally {
+        sem.release();
+      }
     }));
   }
 }
@@ -716,7 +753,7 @@ async function main() {
 
     switch (runtimeSelected) {
       case RuntimeTypes.pipelines:
-        await pipelinesRuntime(cfConfig);
+        await gatherPipelinesRuntime(cfConfig);
         break;
       case RuntimeTypes.gitops:
         await gitopsRuntime();
