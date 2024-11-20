@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers the workflow on new tags that start with 'v'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.0.6"
+
+      - name: Compile binaries
+        run: |
+          sed -i "s/__APP_VERSION__/$TAG_NAME/g" main.js
+          deno task compile
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+
+      - name: Package binaries
+        run: |
+          zip ./bin/cf-support_windows_x86_64.zip ./bin/cf-support_windows_x86_64.exe
+          tar -czvf ./bin/cf-support_darwin_x86_64.tar.gz ./bin/cf-support_darwin_x86_64
+          tar -czvf ./bin/cf-support_darwin_arm64.tar.gz ./bin/cf-support_darwin_arm64
+          tar -czvf ./bin/cf-support_linux_x86_64.tar.gz ./bin/cf-support_linux_x86_64
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: >-
+            ./bin/cf-support_windows_x86_64.zip,
+            ./bin/cf-support_darwin_x86_64.tar.gz,
+            ./bin/cf-support_darwin_arm64.tar.gz,
+            ./bin/cf-support_linux_x86_64.tar.gz

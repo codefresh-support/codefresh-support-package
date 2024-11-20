@@ -13,6 +13,8 @@ import { decodeBase64 } from '@std/encoding';
 import { Table } from '@cliffy/table';
 import { getSemaphore } from '@henrygd/semaphore';
 
+const VERSION = "__APP_VERSION__";
+
 const RuntimeTypes = {
   pipelines: 'Pipelines Runtime',
   gitops: 'GitOps Runtime',
@@ -139,23 +141,9 @@ export function getFormattedEvents(events) {
       const kind = event.involvedObject.kind ?? 'N/A';
       const name = event.involvedObject.name ?? 'N/A';
       const message = event.message ?? 'N/A';
-      return {
-        lastSeen,
-        type,
-        reason,
-        kind,
-        name,
-        message,
-      };
+      return { lastSeen, type, reason, kind, name, message };
     })
-    : [{
-      lastSeen: 'N/A',
-      type: 'N/A',
-      reason: 'N/A',
-      kind: 'N/A',
-      name: 'N/A',
-      message: 'N/A',
-    }];
+    : [{ lastSeen: 'N/A', type: 'N/A', reason: 'N/A', kind: 'N/A', name: 'N/A', message: 'N/A' }];
 
   const table = new Table();
   table.fromJson(formattedEvents);
@@ -188,12 +176,10 @@ export function getHelmReleases(secrets) {
 }
 
 // TODO: convert using the kubernetes sdk
-
 export async function describeK8sResources(resourceType, namespace, name) {
   const describe = new Deno.Command('kubectl', {
     args: ['describe', resourceType.toLowerCase(), '-n', namespace, name],
   });
-
   return new TextDecoder().decode((await describe.output()).stdout);
 }
 
@@ -219,21 +205,9 @@ export function getPodList(pods) {
       const status = pod.status?.phase ?? 'Unknown';
       const restarts = pod.status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0;
       const age = pod.metadata?.creationTimestamp ? calculateAge(pod.metadata.creationTimestamp) : 'N/A';
-      return {
-        name,
-        ready,
-        status,
-        restarts,
-        age,
-      };
+      return { name, ready, status, restarts, age };
     })
-    : [{
-      name: 'N/A',
-      ready: 'N/A',
-      status: 'N/A',
-      restarts: 'N/A',
-      age: 'N/A',
-    }];
+    : [{ name: 'N/A', ready: 'N/A', status: 'N/A', restarts: 'N/A', age: 'N/A' }];
   const table = new Table();
   table.fromJson(podList);
   return table.toString();
@@ -251,15 +225,7 @@ export function getPVCList(Volumeclaims) {
       const accessModes = pvc.spec?.accessModes?.join(', ') ?? 'N/A';
       const storageClass = pvc.spec?.storageClassName ?? 'N/A';
       const age = pvc.metadata?.creationTimestamp ? calculateAge(pvc.metadata.creationTimestamp) : 'N/A';
-      return {
-        name,
-        status,
-        volume,
-        capacity,
-        accessModes,
-        storageClass,
-        age,
-      };
+      return { name, status, volume, capacity, accessModes, storageClass, age };
     })
     : [{
       name: 'N/A',
@@ -287,16 +253,7 @@ export function getPVList(Volumes) {
       const claim = `${pv.spec?.claimRef?.namespace ?? 'N/A'}/${pv.spec?.claimRef?.name ?? 'N/A'}`;
       const storageClass = pv.spec?.storageClassName ?? 'N/A';
       const age = pv.metadata?.creationTimestamp ? calculateAge(pv.metadata.creationTimestamp) : 'N/A';
-      return {
-        name,
-        capacity,
-        accessModes,
-        reclaimPolicy,
-        status,
-        claim,
-        storageClass,
-        age,
-      };
+      return { name, capacity, accessModes, reclaimPolicy, status, claim, storageClass, age };
     })
     : [{
       name: 'N/A',
@@ -679,6 +636,8 @@ async function prepareAndCleanup() {
 export async function fetchAndSaveData(type, namespace) {
   await Deno.mkdir(`${dirPath}/`, { recursive: true });
 
+  await Deno.writeTextFile(`${dirPath}/cf-support-version.txt`, VERSION);
+
   for (const [itemType, fetcher] of Object.entries(getK8sResources(type, namespace) || {})) {
     const resources = await fetcher();
 
@@ -748,6 +707,7 @@ export async function fetchAndSaveData(type, namespace) {
 
 async function main() {
   try {
+    console.log(`App Version: ${VERSION}\n`);
     const runtimeSelected = getUserRuntimeSelection();
     const cfConfig = await getCodefreshCredentials();
 

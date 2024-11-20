@@ -12,7 +12,8 @@
       "extensions": [
         "denoland.vscode-deno",
         "davidanson.vscode-markdownlint",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions"
       ]
     }
   }
