@@ -211,8 +211,9 @@ export function getPodList(pods) {
   const podList = pods.items.length > 0
     ? pods.items.map((pod) => {
       const name = pod.metadata?.name ?? 'N/A';
-      const ready = `${pod.status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${pod.status?.containerStatuses?.length ?? 0
-        }`;
+      const ready = `${pod.status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${
+        pod.status?.containerStatuses?.length ?? 0
+      }`;
       const status = pod.status?.phase ?? 'Unknown';
       const restarts = pod.status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0;
       const age = pod.metadata?.creationTimestamp ? calculateAge(pod.metadata.creationTimestamp) : 'N/A';
@@ -242,8 +243,9 @@ export function getPVCList(Volumeclaims) {
       const name = pvc.metadata?.name ?? 'N/A';
       const status = pvc.status?.phase ?? 'Unknown';
       const volume = pvc.spec?.volumeName ?? 'N/A';
-      const capacity = `${pvc.spec?.resources?.requests?.storage?.number ?? 'N/A'} ${pvc.spec?.resources?.requests?.storage.suffix ?? 'N/A'
-        }`;
+      const capacity = `${pvc.spec?.resources?.requests?.storage?.number ?? 'N/A'} ${
+        pvc.spec?.resources?.requests?.storage.suffix ?? 'N/A'
+      }`;
       const accessModes = pvc.spec?.accessModes?.join(', ') ?? 'N/A';
       const storageClass = pvc.spec?.storageClassName ?? 'N/A';
       const age = pvc.metadata?.creationTimestamp ? calculateAge(pvc.metadata.creationTimestamp) : 'N/A';

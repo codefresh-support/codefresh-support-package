@@ -1,8 +1,8 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "denoland/deno:2.0.6",
-  "onCreateCommand": "apt-get update && apt-get install git zip -y",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
   "customizations": {
     "vscode": {
       "settings": {
@@ -11,7 +11,8 @@
       },
       "extensions": [
         "denoland.vscode-deno",
-        "davidanson.vscode-markdownlint"
+        "davidanson.vscode-markdownlint",
+        "redhat.vscode-yaml"
       ]
     }
   }
