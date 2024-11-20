@@ -71,3 +71,13 @@ chmod +x cf-support
 1. Go the the [Latest](https://github.com/codefresh-support/codefresh-support-package/releases/latest) release.
 1. Download the cf-support_windows_x86_64.zip file
 1. Run the `.exe` file via CMD or PowerShell
+
+## How to Release a New Version
+
+1. Create a tag starting with `v`
+1. Push tag to repo
+
+```shell
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin v1.0.0
+```
