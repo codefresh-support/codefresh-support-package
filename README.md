@@ -1,8 +1,6 @@
 # Codefresh Support Package
 
-This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS platform, and Hybrid Runtimes and OnPrem isntallation on the OnPrem Platform. It
-collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events. For Classic and OnPrem we gather some informtion
-from the platform itself.
+This project is designed to gather data from Hybrid Runtimes for Codefresh SaaS platform, and Hybrid Runtimes and OnPrem isntallation on the OnPrem Platform. It collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events. For Classic and OnPrem we gather some informtion from the platform itself.
 
 ## Prereqs
 
@@ -15,9 +13,6 @@ from the platform itself.
     - `CF_URL`: URL of the platform (ex: `https://g.codefresh.io`)
   - Need an Account Admin Token for Claasic Hybrid Runtime.
   - Need a System Admin Token for the OnPrem Installation.
-- Helm
-  - Version 3.
-  - Used to get the helm release version of the installation.
 - JQ
   - Used only to get the latest version of the binary for *nix systems.
 
@@ -76,10 +71,3 @@ chmod +x cf-support
 1. Go the the [Latest](https://github.com/codefresh-support/codefresh-support-package/releases/latest) release.
 1. Download the cf-support_windows_x86_64.zip file
 1. Run the `.exe` file via CMD or PowerShell
-
-## Exit Codes
-
-- 10 - Failed to get codefresh credentials. Please set the enviroment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid codefresh config file.
-- 20 - Failed to Create Demo Pipeline / Project or Failed to run Demo Pipeline.
-- 30 - Failed to Delete Demo Pipeline / Project
-- 40 - Invalid Runtime Type. ex: Selecting On-Prem for a SaaS Account.
