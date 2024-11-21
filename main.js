@@ -10,7 +10,7 @@ import { parse, stringify as toYaml } from '@std/yaml';
 import { Table } from '@cliffy/table';
 import { getSemaphore } from '@henrygd/semaphore';
 
-const VERSION = "__APP_VERSION__";
+const VERSION = '__APP_VERSION__';
 
 const RuntimeTypes = {
   pipelines: 'Pipelines Runtime',
@@ -33,25 +33,25 @@ const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 // KUBERNETES
 // ##############################
 async function selectNamespace() {
-    const namespaceList = await coreApi.getNamespaceList();
-    if (!namespaceList.items || namespaceList.items.length === 0) {
-      throw new Error('No namespaces found.');
+  const namespaceList = await coreApi.getNamespaceList();
+  if (!namespaceList.items || namespaceList.items.length === 0) {
+    throw new Error('No namespaces found.');
+  }
+
+  console.log('');
+  namespaceList.items.forEach((namespace, index) => {
+    console.log(`${index + 1}. ${namespace.metadata?.name}`);
+  });
+
+  let selection;
+  do {
+    selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
+    if (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
+      console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
     }
+  } while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length);
 
-    console.log('');
-    namespaceList.items.forEach((namespace, index) => {
-      console.log(`${index + 1}. ${namespace.metadata?.name}`);
-    });
-
-    let selection;
-    do {
-      selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
-      if (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
-        console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
-      }
-    } while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length);
-
-    return namespaceList.items[selection - 1].metadata.name;
+  return namespaceList.items[selection - 1].metadata.name;
 }
 
 function getK8sResources(runtimeType, namespace) {
@@ -64,7 +64,8 @@ function getK8sResources(runtimeType, namespace) {
         'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
         'Nodes': () => coreApi.getNodeList(),
         'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () => coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
+        'Volumeclaims': () =>
+          coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
         'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'Services': () => coreApi.namespace(namespace).getServiceList(),
         'Pods': () => coreApi.namespace(namespace).getPodList(),
@@ -101,19 +102,19 @@ function calculateAge(creationTimestamp) {
 }
 
 function getFormattedEvents(events) {
-  const sortedEvents = events.items.sort((a, b) => 
+  const sortedEvents = events.items.sort((a, b) =>
     new Date(a.metadata?.creationTimestamp ?? 0) - new Date(b.metadata?.creationTimestamp ?? 0)
   );
 
   const formattedEvents = sortedEvents.length > 0
-    ? sortedEvents.map(event => ({
-        lastSeen: event.lastTimestamp ? calculateAge(event.lastTimestamp) : 'N/A',
-        type: event.type ?? 'N/A',
-        reason: event.reason ?? 'N/A',
-        kind: event.involvedObject?.kind ?? 'N/A',
-        name: event.involvedObject?.name ?? 'N/A',
-        message: event.message ?? 'N/A'
-      }))
+    ? sortedEvents.map((event) => ({
+      lastSeen: event.lastTimestamp ? calculateAge(event.lastTimestamp) : 'N/A',
+      type: event.type ?? 'N/A',
+      reason: event.reason ?? 'N/A',
+      kind: event.involvedObject?.kind ?? 'N/A',
+      name: event.involvedObject?.name ?? 'N/A',
+      message: event.message ?? 'N/A',
+    }))
     : [{ lastSeen: 'N/A', type: 'N/A', reason: 'N/A', kind: 'N/A', name: 'N/A', message: 'N/A' }];
 
   const table = new Table();
@@ -162,24 +163,26 @@ function getPodList(pods) {
 function getPVCList(volumeClaims) {
   const formattedPVC = volumeClaims.items.length > 0
     ? volumeClaims.items.map(({ metadata, status, spec }) => {
-        const name = metadata?.name ?? 'N/A';
-        const phase = status?.phase ?? 'Unknown';
-        const volume = spec?.volumeName ?? 'N/A';
-        const capacity = `${spec?.resources?.requests?.storage?.number ?? 'N/A'} ${spec?.resources?.requests?.storage?.suffix ?? 'N/A'}`;
-        const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
-        const storageClass = spec?.storageClassName ?? 'N/A';
-        const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
-        return { name, status: phase, volume, capacity, accessModes, storageClass, age };
-      })
+      const name = metadata?.name ?? 'N/A';
+      const phase = status?.phase ?? 'Unknown';
+      const volume = spec?.volumeName ?? 'N/A';
+      const capacity = `${spec?.resources?.requests?.storage?.number ?? 'N/A'} ${
+        spec?.resources?.requests?.storage?.suffix ?? 'N/A'
+      }`;
+      const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
+      const storageClass = spec?.storageClassName ?? 'N/A';
+      const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
+      return { name, status: phase, volume, capacity, accessModes, storageClass, age };
+    })
     : [{
-        name: 'N/A',
-        status: 'N/A',
-        volume: 'N/A',
-        capacity: 'N/A',
-        accessModes: 'N/A',
-        storageClass: 'N/A',
-        age: 'N/A',
-      }];
+      name: 'N/A',
+      status: 'N/A',
+      volume: 'N/A',
+      capacity: 'N/A',
+      accessModes: 'N/A',
+      storageClass: 'N/A',
+      age: 'N/A',
+    }];
 
   const table = new Table();
   table.fromJson(formattedPVC);
@@ -189,26 +192,26 @@ function getPVCList(volumeClaims) {
 function getPVList(volumes) {
   const formattedPV = volumes.items.length > 0
     ? volumes.items.map(({ metadata, spec, status }) => {
-        const name = metadata?.name ?? 'N/A';
-        const capacity = `${spec?.capacity?.storage?.number ?? 'N/A'} ${spec?.capacity?.storage?.suffix ?? 'N/A'}`;
-        const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
-        const reclaimPolicy = spec?.persistentVolumeReclaimPolicy ?? 'N/A';
-        const phase = status?.phase ?? 'Unknown';
-        const claim = `${spec?.claimRef?.namespace ?? 'N/A'}/${spec?.claimRef?.name ?? 'N/A'}`;
-        const storageClass = spec?.storageClassName ?? 'N/A';
-        const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
-        return { name, capacity, accessModes, reclaimPolicy, status: phase, claim, storageClass, age };
-      })
+      const name = metadata?.name ?? 'N/A';
+      const capacity = `${spec?.capacity?.storage?.number ?? 'N/A'} ${spec?.capacity?.storage?.suffix ?? 'N/A'}`;
+      const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
+      const reclaimPolicy = spec?.persistentVolumeReclaimPolicy ?? 'N/A';
+      const phase = status?.phase ?? 'Unknown';
+      const claim = `${spec?.claimRef?.namespace ?? 'N/A'}/${spec?.claimRef?.name ?? 'N/A'}`;
+      const storageClass = spec?.storageClassName ?? 'N/A';
+      const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
+      return { name, capacity, accessModes, reclaimPolicy, status: phase, claim, storageClass, age };
+    })
     : [{
-        name: 'N/A',
-        capacity: 'N/A',
-        accessModes: 'N/A',
-        reclaimPolicy: 'N/A',
-        status: 'N/A',
-        claim: 'N/A',
-        storageClass: 'N/A',
-        age: 'N/A',
-      }];
+      name: 'N/A',
+      capacity: 'N/A',
+      accessModes: 'N/A',
+      reclaimPolicy: 'N/A',
+      status: 'N/A',
+      claim: 'N/A',
+      storageClass: 'N/A',
+      age: 'N/A',
+    }];
 
   const table = new Table();
   table.fromJson(formattedPV);
@@ -438,7 +441,9 @@ async function gatherPipelinesRuntime(cfConfig) {
       namespace = await selectNamespace();
     }
 
-    console.log(`\nGathering Data For ${reSpec?.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`);
+    console.log(
+      `\nGathering Data For ${reSpec?.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`,
+    );
 
     // Wait 15 seconds to allow the pipeline to run
     await new Promise((resolve) => setTimeout(resolve, 15000));
