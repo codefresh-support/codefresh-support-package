@@ -1,18 +1,11 @@
 'use strict';
-import { autoDetectClient } from '@cloudydeno/kubernetes-client';
-import { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
-import { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
-import { CoreV1Api } from '@cloudydeno/kubernetes-apis/core/v1';
-import { StorageV1Api } from '@cloudydeno/kubernetes-apis/storage.k8s.io/v1';
-import { ArgoprojIoV1alpha1Api } from '@cloudydeno/kubernetes-apis/argoproj.io/v1alpha1';
 import { compress } from '@fakoua/zip-ts';
 import { parse, stringify as toYaml } from '@std/yaml';
-import { Table } from '@cliffy/table';
 import { getSemaphore } from '@henrygd/semaphore';
 
 const VERSION = '__APP_VERSION__';
 
-const RuntimeTypes = {
+const cfRuntimeTypes = {
   pipelines: 'Pipelines Runtime',
   gitops: 'GitOps Runtime',
   onprem: 'On-Prem',
@@ -20,202 +13,99 @@ const RuntimeTypes = {
 
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
+const supportPackageZip = `./codefresh-support-package-${timestamp}.zip`;
 const numOfProcesses = 5;
-
-const kubeConfig = await autoDetectClient();
-const appsApi = new AppsV1Api(kubeConfig);
-const coreApi = new CoreV1Api(kubeConfig);
-const storageApi = new StorageV1Api(kubeConfig);
-const batchApi = new BatchV1Api(kubeConfig);
-const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 
 // ##############################
 // KUBERNETES
 // ##############################
-async function selectNamespace() {
-  const namespaceList = await coreApi.getNamespaceList();
-  if (!namespaceList.items || namespaceList.items.length === 0) {
-    throw new Error('No namespaces found.');
+
+const k8sResourceTypes = [
+  'Applications',
+  'ApplicationSets',
+  'Configmaps',
+  'CronJobs',
+  'DaemonSets',
+  'Deployments',
+  'Jobs',
+  'Nodes',
+  'Pods',
+  'ServiceAccounts',
+  'Services',
+  'StatefulSets',
+  'Storageclass',
+  'PersistentVolumeClaims',
+  'PersistentVolumes',
+];
+
+async function getK8sNamespace() {
+  const namespaces = new Deno.Command('kubectl', {
+    args: ['get', 'namespaces', '-o', 'jsonpath={.items[*].metadata.name}'],
+  });
+  const result = await namespaces.output();
+
+  if (result.stderr.length > 0) {
+    console.error('Unable to get namespaces:');
+    throw new Error(new TextDecoder().decode(result.stderr));
   }
 
-  console.log('');
-  namespaceList.items.forEach((namespace, index) => {
-    console.log(`${index + 1}. ${namespace.metadata?.name}`);
+  const namespaceList = new TextDecoder().decode(result.stdout).split(' ');
+  namespaceList.forEach((namespace, index) => {
+    console.log(`${index + 1}. ${namespace}`);
   });
 
   let selection;
   do {
     selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
-    if (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
+    if (isNaN(selection) || selection < 1 || selection > namespaceList.length) {
       console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
     }
-  } while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length);
+  } while (isNaN(selection) || selection < 1 || selection > namespaceList.length);
 
-  return namespaceList.items[selection - 1].metadata.name;
+  return namespaceList[selection - 1];
 }
 
-function getK8sResources(runtimeType, namespace) {
-  switch (runtimeType) {
-    case RuntimeTypes.pipelines || RuntimeTypes.onprem:
-      return {
-        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () =>
-          coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Storageclass': () => storageApi.getStorageClassList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-      };
-    case RuntimeTypes.gitops:
-      return {
-        'Apps': () => argoProj.namespace(namespace).getApplicationList(),
-        'AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
-        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Statefulsets': () => appsApi.namespace(namespace).getStatefulSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-      };
-    default:
-      throw new Error('Invalid runtime type selected');
-  }
-}
-
-function calculateAge(creationTimestamp) {
-  const now = new Date();
-  const diffMs = now - new Date(creationTimestamp);
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  return `${diffDays}d ${diffHours}h ${diffMinutes}m`;
-}
-
-function getFormattedEvents(events) {
-  const sortedEvents = events.items.sort((a, b) =>
-    new Date(a.metadata?.creationTimestamp ?? 0) - new Date(b.metadata?.creationTimestamp ?? 0)
-  );
-
-  const formattedEvents = sortedEvents.length > 0
-    ? sortedEvents.map((event) => ({
-      lastSeen: event.lastTimestamp ? calculateAge(event.lastTimestamp) : 'N/A',
-      type: event.type ?? 'N/A',
-      reason: event.reason ?? 'N/A',
-      kind: event.involvedObject?.kind ?? 'N/A',
-      name: event.involvedObject?.name ?? 'N/A',
-      message: event.message ?? 'N/A',
-    }))
-    : [{ lastSeen: 'N/A', type: 'N/A', reason: 'N/A', kind: 'N/A', name: 'N/A', message: 'N/A' }];
-
-  const table = new Table();
-  table.fromJson(formattedEvents);
-  return table.toString();
-}
-
-// TODO: convert using the kubernetes sdk
-async function describeK8sResources(resourceType, namespace, name) {
-  const describe = new Deno.Command('kubectl', {
-    args: ['describe', resourceType.toLowerCase(), '-n', namespace, name],
+async function getK8sResources(resourceType, namespace, labelSelector) {
+  const cmdList = new Deno.Command('kubectl', {
+    args: ['get', resourceType.toLowerCase(), '-n', namespace, '-l', labelSelector],
   });
-  return new TextDecoder().decode((await describe.output()).stdout);
+  const cmdJSON = new Deno.Command('kubectl', {
+    args: ['get', resourceType.toLowerCase(), '-n', namespace, '-l', labelSelector, '-o', 'json'],
+  });
+  const cmdListResult = await cmdList.output();
+  const cmdJSONResult = await cmdJSON.output();
+  return {
+    resourceList: new TextDecoder().decode(
+      cmdListResult.stderr.length > 0 ? cmdListResult.stderr : cmdListResult.stdout,
+    ),
+    resourceJSON: JSON.parse(
+      new TextDecoder().decode(cmdJSONResult.stderr.length > 0 ? cmdJSONResult.stderr : cmdJSONResult.stdout),
+    ),
+  };
+}
+
+async function getK8sEvents(namespace) {
+  const events = new Deno.Command('kubectl', {
+    args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'],
+  });
+  const result = await events.output();
+  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+}
+
+async function describeK8sResources(resourceType, namespace, resourceName) {
+  const describe = new Deno.Command('kubectl', {
+    args: ['describe', resourceType.toLowerCase(), '-n', namespace, resourceName],
+  });
+  const result = await describe.output();
+  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
 }
 
 async function getK8sLogs(namespace, podName, containerName) {
-  try {
-    const logs = await coreApi.namespace(namespace).getPodLog(podName, {
-      container: containerName,
-      timestamps: true,
-    });
-    return logs;
-  } catch (error) {
-    return error.message;
-  }
-}
-
-function getPodList(pods) {
-  const podList = pods.items.length > 0
-    ? pods.items.map((pod) => {
-      const name = pod.metadata?.name ?? 'N/A';
-      const ready = `${pod.status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${
-        pod.status?.containerStatuses?.length ?? 0
-      }`;
-      const status = pod.status?.phase ?? 'Unknown';
-      const restarts = pod.status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0;
-      const age = pod.metadata?.creationTimestamp ? calculateAge(pod.metadata.creationTimestamp) : 'N/A';
-      return { name, ready, status, restarts, age };
-    })
-    : [{ name: 'N/A', ready: 'N/A', status: 'N/A', restarts: 'N/A', age: 'N/A' }];
-  const table = new Table();
-  table.fromJson(podList);
-  return table.toString();
-}
-
-function getPVCList(volumeClaims) {
-  const formattedPVC = volumeClaims.items.length > 0
-    ? volumeClaims.items.map(({ metadata, status, spec }) => {
-      const name = metadata?.name ?? 'N/A';
-      const phase = status?.phase ?? 'Unknown';
-      const volume = spec?.volumeName ?? 'N/A';
-      const capacity = `${spec?.resources?.requests?.storage?.number ?? 'N/A'} ${
-        spec?.resources?.requests?.storage?.suffix ?? 'N/A'
-      }`;
-      const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
-      const storageClass = spec?.storageClassName ?? 'N/A';
-      const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
-      return { name, status: phase, volume, capacity, accessModes, storageClass, age };
-    })
-    : [{
-      name: 'N/A',
-      status: 'N/A',
-      volume: 'N/A',
-      capacity: 'N/A',
-      accessModes: 'N/A',
-      storageClass: 'N/A',
-      age: 'N/A',
-    }];
-
-  const table = new Table();
-  table.fromJson(formattedPVC);
-  return table.toString();
-}
-
-function getPVList(volumes) {
-  const formattedPV = volumes.items.length > 0
-    ? volumes.items.map(({ metadata, spec, status }) => {
-      const name = metadata?.name ?? 'N/A';
-      const capacity = `${spec?.capacity?.storage?.number ?? 'N/A'} ${spec?.capacity?.storage?.suffix ?? 'N/A'}`;
-      const accessModes = spec?.accessModes?.join(', ') ?? 'N/A';
-      const reclaimPolicy = spec?.persistentVolumeReclaimPolicy ?? 'N/A';
-      const phase = status?.phase ?? 'Unknown';
-      const claim = `${spec?.claimRef?.namespace ?? 'N/A'}/${spec?.claimRef?.name ?? 'N/A'}`;
-      const storageClass = spec?.storageClassName ?? 'N/A';
-      const age = metadata?.creationTimestamp ? calculateAge(metadata.creationTimestamp) : 'N/A';
-      return { name, capacity, accessModes, reclaimPolicy, status: phase, claim, storageClass, age };
-    })
-    : [{
-      name: 'N/A',
-      capacity: 'N/A',
-      accessModes: 'N/A',
-      reclaimPolicy: 'N/A',
-      status: 'N/A',
-      claim: 'N/A',
-      storageClass: 'N/A',
-      age: 'N/A',
-    }];
-
-  const table = new Table();
-  table.fromJson(formattedPV);
-  return table.toString();
+  const logs = new Deno.Command('kubectl', {
+    args: ['logs', '-n', namespace, podName, '-c', containerName],
+  });
+  const result = await logs.output();
+  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
 }
 
 // ##############################
@@ -252,7 +142,7 @@ async function getCodefreshCredentials() {
 }
 
 function getUserRuntimeSelection() {
-  const runtimes = Object.values(RuntimeTypes);
+  const runtimes = Object.values(cfRuntimeTypes);
 
   runtimes.forEach((runtimeName, index) => {
     console.log(`${index + 1}. ${runtimeName}`);
@@ -438,7 +328,7 @@ async function gatherPipelinesRuntime(cfConfig) {
       pipelineExecutionOutput = await runTestPipeline(cfConfig, reSpec.metadata.name);
     } else {
       console.log('No Pipelines Runtimes found in the account.');
-      namespace = await selectNamespace();
+      namespace = await getK8sNamespace();
     }
 
     console.log(
@@ -448,7 +338,7 @@ async function gatherPipelinesRuntime(cfConfig) {
     // Wait 15 seconds to allow the pipeline to run
     await new Promise((resolve) => setTimeout(resolve, 15000));
 
-    await fetchAndSaveData(RuntimeTypes.pipelines, namespace);
+    await fetchAndSaveData(cfRuntimeTypes.pipelines, namespace);
 
     if (reSpec) {
       await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
@@ -471,9 +361,9 @@ async function gatherPipelinesRuntime(cfConfig) {
 // ##############################
 async function gatherGitopsRuntime() {
   try {
-    const namespace = await selectNamespace();
+    const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
-    await fetchAndSaveData(RuntimeTypes.gitops, namespace);
+    await fetchAndSaveData(cfRuntimeTypes.gitops, namespace);
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
@@ -522,16 +412,16 @@ async function getSystemFeatureFlags(cfConfig) {
 async function gatherOnPrem(cfConfig) {
   if (cfConfig.baseUrl === 'https://g.codefresh.io/api') {
     console.error(
-      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeTypes.pipelines} or ${RuntimeTypes.gitops}.\n If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.`,
+      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${cfRuntimeTypes.pipelines} or ${cfRuntimeTypes.gitops}.\n If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.`,
     );
     throw new Error('Invalid Codefresh On-Prem URL.');
   }
 
   try {
-    const namespace = await selectNamespace();
+    const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
 
-    await fetchAndSaveData(RuntimeTypes.onprem, namespace);
+    await fetchAndSaveData(cfRuntimeTypes.onprem, namespace);
 
     await Promise.all([
       getAllAccounts(cfConfig),
@@ -550,9 +440,6 @@ async function gatherOnPrem(cfConfig) {
 // ##############################
 // HELPER FUNCTIONS
 // ##############################
-async function creatDirectory(path) {
-  await Deno.mkdir(`${dirPath}/${path}/`, { recursive: true });
-}
 
 async function writeCodefreshFiles(data, name) {
   const filePath = `${dirPath}/${name}.yaml`;
@@ -560,12 +447,12 @@ async function writeCodefreshFiles(data, name) {
   await Deno.writeTextFile(filePath, fileContent);
 }
 
-async function writeGetApiCalls(resources, path) {
-  const sem = getSemaphore(path, numOfProcesses);
+async function writeGetApiCalls(resources, k8sType) {
+  const sem = getSemaphore(k8sType, numOfProcesses);
   await Promise.all(resources.map(async (item) => {
     await sem.acquire();
     try {
-      const filePath = `${dirPath}/${path}/${item.metadata.name}_get.yaml`;
+      const filePath = `${dirPath}/${k8sType}/${item.metadata.name}.yaml`;
       const fileContent = toYaml(item, { skipInvalid: true });
       await Deno.writeTextFile(filePath, fileContent);
     } finally {
@@ -575,75 +462,68 @@ async function writeGetApiCalls(resources, path) {
 }
 
 async function prepareAndCleanup() {
-  console.log(`Saving data to ./codefresh-support-package-${timestamp}.zip`);
-  await compress(dirPath, `./codefresh-support-package-${timestamp}.zip`, { overwrite: true });
+  console.log(`Saving data to ${supportPackageZip}`);
+  await compress(dirPath, `${supportPackageZip}`, { overwrite: true });
 
   console.log('Cleaning up temp directory');
   await Deno.remove(dirPath, { recursive: true });
 
-  console.log(`\nPlease attach ./codefresh-support-package-${timestamp}.zip to your support ticket.`);
+  console.log(`\nPlease attach ${supportPackageZip} to your support ticket.`);
 }
 
-async function fetchAndSaveData(type, namespace) {
-  await Deno.mkdir(`${dirPath}/`, { recursive: true });
+async function fetchAndSaveData(namespace) {
+  for (const k8sType of k8sResourceTypes) {
+    await Deno.mkdir(`${dirPath}/${k8sType}/`, { recursive: true });
 
-  await Deno.writeTextFile(`${dirPath}/cf-support-version.txt`, VERSION);
+    const labelSelector = (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes') ? 'io.codefresh.accountName' : '';
+    const { resourceList, resourceJSON } = await getK8sResources(k8sType, namespace, labelSelector);
 
-  for (const [itemType, fetcher] of Object.entries(getK8sResources(type, namespace) || {})) {
-    const resources = await fetcher();
+    await Deno.writeTextFile(`${dirPath}/${k8sType}List.txt`, resourceList);
 
-    if (itemType === 'Events') {
-      const formattedEvents = getFormattedEvents(resources);
-      await Deno.writeTextFile(`${dirPath}/Events.txt`, formattedEvents);
+    if (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes') {
+      if (resourceJSON.items.length !== 0) {
+        await writeGetApiCalls(resourceJSON.items, k8sType);
+      }
       continue;
     }
 
-    await creatDirectory(itemType);
+    const sem = getSemaphore(k8sType, numOfProcesses);
 
-    if (itemType === 'Pods') {
-      const podList = getPodList(resources);
-      await Deno.writeTextFile(`${dirPath}/PodList.txt`, podList);
-
+    if (k8sType === 'Pods') {
       await Promise.all(
-        resources.items.map(async (resource) => {
+        resourceJSON.items.map(async (resource) => {
           const podName = resource.metadata.name;
           const containers = resource.spec.containers;
 
           await Promise.all(containers.map(async (container) => {
-            const log = await getK8sLogs(namespace, podName, container.name);
-            const logFileName = `${dirPath}/${itemType}/${podName}_${container.name}_log.log`;
-            await Deno.writeTextFile(logFileName, log);
+            await sem.acquire();
+            try {
+              const log = await getK8sLogs(namespace, podName, container.name);
+              const logFileName = `${dirPath}/${k8sType}/${podName}_${container.name}.log`;
+              await Deno.writeTextFile(logFileName, log);
+            } finally {
+              sem.release();
+            }
           }));
         }),
       );
     }
 
-    if (itemType === 'Volumeclaims') {
-      const pvcList = getPVCList(resources);
-      await Deno.writeTextFile(`${dirPath}/VolumeClaimsList.txt`, pvcList);
-      await writeGetApiCalls(resources.items, itemType);
-      continue;
-    }
-
-    if (itemType === 'Volumes') {
-      const pvList = getPVList(resources);
-      await Deno.writeTextFile(`${dirPath}/VolumesList.txt`, pvList);
-      await writeGetApiCalls(resources.items, itemType);
-      continue;
-    }
-
-    const sem = getSemaphore(itemType, numOfProcesses);
-    await Promise.all(resources.items.map(async (resource) => {
+    
+    await Promise.all(resourceJSON.items.map(async (resource) => {
       await sem.acquire();
       try {
         const describeOutput = await describeK8sResources(itemType, namespace, resource.metadata.name);
-        const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}_describe.yaml`;
+        const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}.yaml`;
         await Deno.writeTextFile(describeFileName, describeOutput);
       } finally {
         sem.release();
       }
     }));
   }
+
+  await Deno.writeTextFile(`${dirPath}/Events.txt`, await getK8sEvents(namespace));
+  await Deno.writeTextFile(`${dirPath}/cf-support-version.txt`, VERSION);
 }
 
 // ##############################
@@ -656,13 +536,13 @@ async function main() {
     const cfConfig = await getCodefreshCredentials();
 
     switch (runtimeSelected) {
-      case RuntimeTypes.pipelines:
+      case cfRuntimeTypes.pipelines:
         await gatherPipelinesRuntime(cfConfig);
         break;
-      case RuntimeTypes.gitops:
+      case cfRuntimeTypes.gitops:
         await gatherGitopsRuntime();
         break;
-      case RuntimeTypes.onprem:
+      case cfRuntimeTypes.onprem:
         await gatherOnPrem(cfConfig);
         break;
     }
