@@ -515,7 +515,17 @@ async function fetchAndSaveData(namespace) {
     const labelSelector = (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes')
       ? 'io.codefresh.accountName'
       : '';
-    const { resourceList, resourceJSON } = await getK8sResources(k8sType, namespace, labelSelector);
+
+    let resourceList;
+    let resourceJSON;
+    try {
+      const getResources = await getK8sResources(k8sType, namespace, labelSelector);
+      resourceList = getResources.resourceList;
+      resourceJSON = getResources.resourceJSON;
+    } catch (_error) {
+      console.error(`Error getting ${k8sType} resources: error: the server doesn't have a resource type "${k8sType.toLocaleLowerCase()}"`);
+      continue;
+    }
 
     await Deno.writeTextFile(`${dirPath}/${k8sType}/_${k8sType}List.txt`, resourceList);
 
