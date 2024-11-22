@@ -29,13 +29,13 @@ const k8sResourceTypes = [
   'Deployments',
   'Jobs',
   'Nodes',
+  'PersistentVolumeClaims',
+  'PersistentVolumes',
   'Pods',
   'ServiceAccounts',
   'Services',
   'StatefulSets',
   'Storageclass',
-  'PersistentVolumeClaims',
-  'PersistentVolumes',
 ];
 
 async function getK8sNamespace() {
@@ -65,47 +65,63 @@ async function getK8sNamespace() {
   return namespaceList[selection - 1];
 }
 
-async function getK8sResources(resourceType, namespace, labelSelector) {
-  const cmdList = new Deno.Command('kubectl', {
-    args: ['get', resourceType.toLowerCase(), '-n', namespace, '-l', labelSelector],
-  });
-  const cmdJSON = new Deno.Command('kubectl', {
-    args: ['get', resourceType.toLowerCase(), '-n', namespace, '-l', labelSelector, '-o', 'json'],
-  });
-  const cmdListResult = await cmdList.output();
-  const cmdJSONResult = await cmdJSON.output();
-  return {
-    resourceList: new TextDecoder().decode(
-      cmdListResult.stderr.length > 0 ? cmdListResult.stderr : cmdListResult.stdout,
-    ),
-    resourceJSON: JSON.parse(
-      new TextDecoder().decode(cmdJSONResult.stderr.length > 0 ? cmdJSONResult.stderr : cmdJSONResult.stdout),
-    ),
-  };
+async function getK8sResources(k8sType, namespace, labelSelector) {
+  try {
+    const cmdList = new Deno.Command('kubectl', {
+      args: ['get', k8sType.toLowerCase(), '-n', namespace, '-l', labelSelector],
+    });
+    const cmdJSON = new Deno.Command('kubectl', {
+      args: ['get', k8sType.toLowerCase(), '-n', namespace, '-l', labelSelector, '-o', 'json'],
+    });
+    const cmdListResult = await cmdList.output();
+    const cmdJSONResult = await cmdJSON.output();
+    return {
+      resourceList: new TextDecoder().decode(
+        cmdListResult.stderr.length > 0 ? cmdListResult.stderr : cmdListResult.stdout,
+      ),
+      resourceJSON: JSON.parse(
+        new TextDecoder().decode(cmdJSONResult.stderr.length > 0 ? cmdJSONResult.stderr : cmdJSONResult.stdout),
+      ),
+    };
+  } catch (error) {
+    throw new Error(`Error getting ${k8sType} resources:`, error);
+  }
 }
 
 async function getK8sEvents(namespace) {
-  const events = new Deno.Command('kubectl', {
-    args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'],
-  });
-  const result = await events.output();
-  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  try {
+    const events = new Deno.Command('kubectl', {
+      args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'],
+    });
+    const result = await events.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error('Error getting k8s events:', error);
+  }
 }
 
-async function describeK8sResources(resourceType, namespace, resourceName) {
-  const describe = new Deno.Command('kubectl', {
-    args: ['describe', resourceType.toLowerCase(), '-n', namespace, resourceName],
-  });
-  const result = await describe.output();
-  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+async function describeK8sResources(k8sType, namespace, resourceName) {
+  try {
+    const describe = new Deno.Command('kubectl', {
+      args: ['describe', k8sType.toLowerCase(), '-n', namespace, resourceName],
+    });
+    const result = await describe.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error(`Error describing ${k8sType} resource:`, error);
+  }
 }
 
 async function getK8sLogs(namespace, podName, containerName) {
-  const logs = new Deno.Command('kubectl', {
-    args: ['logs', '-n', namespace, podName, '-c', containerName],
-  });
-  const result = await logs.output();
-  return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  try {
+    const logs = new Deno.Command('kubectl', {
+      args: ['logs', '-n', namespace, podName, '-c', containerName],
+    });
+    const result = await logs.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error(`Error getting logs for ${podName} - ${containerName}:`, error);
+  }
 }
 
 // ##############################
@@ -187,8 +203,10 @@ async function runTestPipeline(cfConfig, runtimeName) {
 
   console.log(`\nCreating a demo pipeline to test the ${runtimeName} runtime.`);
 
-  const projectName = 'codefresh-support-package';
+  const projectName = 'CODEFRESH-SUPPORT-PACKAGE';
   const pipelineName = 'TEST-PIPELINE-FOR-SUPPORT';
+  const pipelineYaml =
+    'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"';
 
   const project = JSON.stringify({
     projectName: projectName,
@@ -200,8 +218,7 @@ async function runTestPipeline(cfConfig, runtimeName) {
     metadata: {
       name: `${projectName}/${pipelineName}`,
       project: projectName,
-      originalYamlString:
-        'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"',
+      originalYamlString: pipelineYaml,
     },
     spec: {
       concurrency: 1,
@@ -245,15 +262,30 @@ async function runTestPipeline(cfConfig, runtimeName) {
   const pipelineStatus = await createPipelineResponse.json();
 
   if (!createPipelineResponse.ok) {
-    console.error('Error creating pipeline:', createPipelineResponse.statusText);
-    console.error(pipelineStatus);
-    const getPipelineID = await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
-      method: 'GET',
-      headers: cfConfig.headers,
-    });
-    const pipelineResponse = await getPipelineID.json();
-    pipelineStatus.metadata = {};
-    pipelineStatus.metadata.id = pipelineResponse.metadata.id;
+    try {
+      console.error('Error creating pipeline:', createPipelineResponse.statusText);
+      console.error(pipelineStatus);
+      const getPipelineID = await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
+        method: 'GET',
+        headers: cfConfig.headers,
+      });
+      const pipelineResponse = await getPipelineID.json();
+      pipelineStatus.metadata = {};
+      pipelineStatus.metadata.id = pipelineResponse.metadata.id;
+      pipelineResponse.spec.runtimeEnvironment = pipelineResponse.spec.runtimeEnvironment || {};
+      pipelineResponse.spec.runtimeEnvironment.name = runtimeName;
+
+      await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
+        method: 'PUT',
+        headers: {
+          ...cfConfig.headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pipelineResponse),
+      });
+    } catch (error) {
+      throw new Error('Error getting / updating pipeline:', error);
+    }
   }
 
   const runPipelineResponse = await fetch(`${cfConfig.baseUrl}/pipelines/run/${pipelineStatus.metadata.id}`, {
@@ -267,14 +299,21 @@ async function runTestPipeline(cfConfig, runtimeName) {
   const runPipelineStatus = await runPipelineResponse.json();
 
   if (!runPipelineResponse.ok) {
-    console.error('Error running pipeline:', runPipelineResponse.statusText);
-    console.error(runPipelineStatus);
-    return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+    try {
+      console.error('Error running pipeline:', runPipelineResponse.statusText);
+      console.error(runPipelineStatus);
+      return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+    } catch (error) {
+      throw new Error('Error running pipeline:', error);
+    }
   }
 
-  console.log(`Demo pipeline created and running build with id of ${runPipelineStatus}.`);
+  console.log(`\nDemo pipeline created and running build with id of ${runPipelineStatus}.`);
 
-  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+  // Wait 30 seconds to allow the pipeline to run
+  await new Promise((resolve) => setTimeout(resolve, 30000));
+
+  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id, buildID: runPipelineStatus };
 }
 
 async function deleteTestPipeline(cfConfig, pipelineID, projectID) {
@@ -284,8 +323,7 @@ async function deleteTestPipeline(cfConfig, pipelineID, projectID) {
   });
 
   if (!deletePipelineResponse.ok) {
-    console.error('Error deleting pipeline:', await deletePipelineResponse.text());
-    Deno.exit(1);
+    throw new Error('Error deleting pipeline:', await deletePipelineResponse.text());
   }
 
   const deleteProjectResponse = await fetch(`${cfConfig.baseUrl}/projects/${projectID}`, {
@@ -294,8 +332,7 @@ async function deleteTestPipeline(cfConfig, pipelineID, projectID) {
   });
 
   if (!deleteProjectResponse.ok) {
-    console.error('Error deleting project:', await deleteProjectResponse.text());
-    Deno.exit(1);
+    throw new Error('Error deleting project:', await deleteProjectResponse.text());
   }
 
   console.log('Demo pipeline and project deleted successfully.');
@@ -335,18 +372,16 @@ async function gatherPipelinesRuntime(cfConfig) {
       `\nGathering Data For ${reSpec?.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`,
     );
 
-    // Wait 15 seconds to allow the pipeline to run
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-
-    await fetchAndSaveData(cfRuntimeTypes.pipelines, namespace);
+    await fetchAndSaveData(namespace);
 
     if (reSpec) {
       await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
     }
 
-    console.log('Data Gathered Successfully.');
+    console.log('\nData Gathered Successfully.');
 
     if (pipelineExecutionOutput) {
+      await Deno.writeTextFile(`${dirPath}/testPipelineBuildId.txt`, pipelineExecutionOutput.buildID);
       await deleteTestPipeline(cfConfig, pipelineExecutionOutput.pipelineID, pipelineExecutionOutput.projectID);
     }
 
@@ -363,7 +398,7 @@ async function gatherGitopsRuntime() {
   try {
     const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
-    await fetchAndSaveData(cfRuntimeTypes.gitops, namespace);
+    await fetchAndSaveData(namespace);
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
@@ -421,7 +456,7 @@ async function gatherOnPrem(cfConfig) {
     const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
 
-    await fetchAndSaveData(cfRuntimeTypes.onprem, namespace);
+    await fetchAndSaveData(namespace);
 
     await Promise.all([
       getAllAccounts(cfConfig),
@@ -475,10 +510,14 @@ async function fetchAndSaveData(namespace) {
   for (const k8sType of k8sResourceTypes) {
     await Deno.mkdir(`${dirPath}/${k8sType}/`, { recursive: true });
 
-    const labelSelector = (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes') ? 'io.codefresh.accountName' : '';
+    console.log(`Gathering ${k8sType} data...`);
+
+    const labelSelector = (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes')
+      ? 'io.codefresh.accountName'
+      : '';
     const { resourceList, resourceJSON } = await getK8sResources(k8sType, namespace, labelSelector);
 
-    await Deno.writeTextFile(`${dirPath}/${k8sType}List.txt`, resourceList);
+    await Deno.writeTextFile(`${dirPath}/${k8sType}/_${k8sType}List.txt`, resourceList);
 
     if (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes') {
       if (resourceJSON.items.length !== 0) {
@@ -509,13 +548,14 @@ async function fetchAndSaveData(namespace) {
       );
     }
 
-    
     await Promise.all(resourceJSON.items.map(async (resource) => {
       await sem.acquire();
       try {
-        const describeOutput = await describeK8sResources(itemType, namespace, resource.metadata.name);
-        const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}.yaml`;
+        const describeOutput = await describeK8sResources(k8sType, namespace, resource.metadata.name);
+        const describeFileName = `${dirPath}/${k8sType}/${resource.metadata.name}.yaml`;
         await Deno.writeTextFile(describeFileName, describeOutput);
+      } catch (error) {
+        console.error(error);
       } finally {
         sem.release();
       }
