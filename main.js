@@ -1,21 +1,11 @@
 'use strict';
-
-import { autoDetectClient } from '@cloudydeno/kubernetes-client';
-import { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
-import { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
-import { CoreV1Api } from '@cloudydeno/kubernetes-apis/core/v1';
-import { StorageV1Api } from '@cloudydeno/kubernetes-apis/storage.k8s.io/v1';
-import { ArgoprojIoV1alpha1Api } from '@cloudydeno/kubernetes-apis/argoproj.io/v1alpha1';
-import { ungzip } from 'pako';
 import { compress } from '@fakoua/zip-ts';
 import { parse, stringify as toYaml } from '@std/yaml';
-import { decodeBase64 } from '@std/encoding';
-import { Table } from '@cliffy/table';
 import { getSemaphore } from '@henrygd/semaphore';
 
-const VERSION = "__APP_VERSION__";
+const VERSION = '__APP_VERSION__';
 
-const RuntimeTypes = {
+const cfRuntimeTypes = {
   pipelines: 'Pipelines Runtime',
   gitops: 'GitOps Runtime',
   onprem: 'On-Prem',
@@ -23,252 +13,115 @@ const RuntimeTypes = {
 
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
+const supportPackageZip = `./codefresh-support-package-${timestamp}.zip`;
 const numOfProcesses = 5;
-
-const kubeConfig = await autoDetectClient();
-const appsApi = new AppsV1Api(kubeConfig);
-const coreApi = new CoreV1Api(kubeConfig);
-const storageApi = new StorageV1Api(kubeConfig);
-const batchApi = new BatchV1Api(kubeConfig);
-const argoProj = new ArgoprojIoV1alpha1Api(kubeConfig);
 
 // ##############################
 // KUBERNETES
 // ##############################
-export async function selectNamespace() {
-  const namespaceList = await coreApi.getNamespaceList();
-  console.log('');
-  namespaceList.items.forEach((namespace, index) => {
-    console.log(`${index + 1}. ${namespace.metadata?.name}`);
+
+const k8sResourceTypes = [
+  'Applications',
+  'ApplicationSets',
+  'Configmaps',
+  'CronJobs',
+  'DaemonSets',
+  'Deployments',
+  'Jobs',
+  'Nodes',
+  'PersistentVolumeClaims',
+  'PersistentVolumes',
+  'Pods',
+  'ServiceAccounts',
+  'Services',
+  'StatefulSets',
+  'Storageclass',
+];
+
+async function getK8sNamespace() {
+  const namespaces = new Deno.Command('kubectl', {
+    args: ['get', 'namespaces', '-o', 'jsonpath={.items[*].metadata.name}'],
+  });
+  const result = await namespaces.output();
+
+  if (result.stderr.length > 0) {
+    console.error('Unable to get namespaces:');
+    throw new Error(new TextDecoder().decode(result.stderr));
+  }
+
+  const namespaceList = new TextDecoder().decode(result.stdout).split(' ');
+  namespaceList.forEach((namespace, index) => {
+    console.log(`${index + 1}. ${namespace}`);
   });
 
-  let selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
-  while (isNaN(selection) || selection < 1 || selection > namespaceList.items.length) {
-    console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
+  let selection;
+  do {
     selection = Number(prompt('\nWhich Namespace Is Codefresh Installed In? (Number): '));
-  }
-
-  const namespace = namespaceList.items[selection - 1].metadata?.name;
-
-  if (!namespace) {
-    throw new Error('Selected namespace is invalid.');
-  }
-
-  return namespace;
-}
-
-export function getK8sResources(runtimeType, namespace) {
-  switch (runtimeType) {
-    case RuntimeTypes.pipelines:
-      return {
-        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () =>
-          coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': () =>
-          coreApi.namespace(namespace).getConfigMapList({ labelSelector: 'app.kubernetes.io/name=cf-runtime' }),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Storageclass': () => storageApi.getStorageClassList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
-      };
-    case RuntimeTypes.gitops:
-      return {
-        'Apps': () => argoProj.namespace(namespace).getApplicationList(),
-        'AppSets': () => argoProj.namespace(namespace).getApplicationSetList(),
-        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Statefulsets': () => appsApi.namespace(namespace).getStatefulSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
-      };
-    case RuntimeTypes.onprem:
-      return {
-        'CronJobs': () => batchApi.namespace(namespace).getCronJobList(),
-        'Jobs': () => batchApi.namespace(namespace).getJobList(),
-        'Deployments': () => appsApi.namespace(namespace).getDeploymentList(),
-        'Daemonsets': () => appsApi.namespace(namespace).getDaemonSetList(),
-        'Nodes': () => coreApi.getNodeList(),
-        'Volumes': () => coreApi.getPersistentVolumeList({ labelSelector: 'io.codefresh.accountName' }),
-        'Volumeclaims': () =>
-          coreApi.namespace(namespace).getPersistentVolumeClaimList({ labelSelector: 'io.codefresh.accountName' }),
-        'Configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
-        'Services': () => coreApi.namespace(namespace).getServiceList(),
-        'Pods': () => coreApi.namespace(namespace).getPodList(),
-        'Storageclass': () => storageApi.getStorageClassList(),
-        'Events': () => coreApi.namespace(namespace).getEventList(),
-        'HelmReleases': () => coreApi.namespace(namespace).getSecretList({ labelSelector: 'owner=helm' }),
-      };
-    default:
-      console.error('Invalid runtime type selected');
-      return;
-  }
-}
-
-function calculateAge(creationTimestamp) {
-  const now = new Date();
-  const diffMs = now.getTime() - creationTimestamp.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  return `${diffDays}d ${diffHours}h ${diffMinutes}m`;
-}
-
-export function getFormattedEvents(events) {
-  // Sort the events by .metadata.creationTimestamp
-  const sortedEvents = events.items.sort((a, b) => {
-    const dateA = a.metadata.creationTimestamp ? new Date(a.metadata.creationTimestamp).getTime() : 0;
-    const dateB = b.metadata.creationTimestamp ? new Date(b.metadata.creationTimestamp).getTime() : 0;
-    return dateA - dateB;
-  });
-
-  const formattedEvents = sortedEvents.length > 0
-    ? sortedEvents.map((event) => {
-      const lastSeen = event.lastTimestamp ? calculateAge(event.lastTimestamp) : 'N/A';
-      const type = event.type ?? 'N/A';
-      const reason = event.reason ?? 'N/A';
-      const kind = event.involvedObject.kind ?? 'N/A';
-      const name = event.involvedObject.name ?? 'N/A';
-      const message = event.message ?? 'N/A';
-      return { lastSeen, type, reason, kind, name, message };
-    })
-    : [{ lastSeen: 'N/A', type: 'N/A', reason: 'N/A', kind: 'N/A', name: 'N/A', message: 'N/A' }];
-
-  const table = new Table();
-  table.fromJson(formattedEvents);
-  return table.toString();
-}
-
-export function getHelmReleases(secrets) {
-  const helmReleases = secrets.items.map((secret) => {
-    const releaseData = secret.data?.release;
-    if (!releaseData) {
-      throw new Error('Release data is undefined');
+    if (isNaN(selection) || selection < 1 || selection > namespaceList.length) {
+      console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
     }
-    const firstDecodedData = decodeBase64(releaseData);
-    const secondDecodedData = decodeBase64(new TextDecoder().decode(firstDecodedData));
-    const extractedData = JSON.parse(ungzip(secondDecodedData, { to: 'string' }));
+  } while (isNaN(selection) || selection < 1 || selection > namespaceList.length);
 
-    const helmInfo = {
-      'name': extractedData.name,
-      'namespace': extractedData.namespace,
-      'revision': extractedData.version,
-      'updated': extractedData.info.last_deployed,
-      'status': extractedData.info.status,
-      'chart': `${extractedData.chart.metadata.name}-${extractedData.chart.metadata.version}`,
-      'appVersion': extractedData.chart.metadata.appVersion,
-    };
-    return helmInfo;
-  });
-
-  return helmReleases;
+  return namespaceList[selection - 1];
 }
 
-// TODO: convert using the kubernetes sdk
-export async function describeK8sResources(resourceType, namespace, name) {
-  const describe = new Deno.Command('kubectl', {
-    args: ['describe', resourceType.toLowerCase(), '-n', namespace, name],
-  });
-  return new TextDecoder().decode((await describe.output()).stdout);
-}
-
-export async function getK8sLogs(namespace, podName, containerName) {
+async function getK8sResources(k8sType, namespace, labelSelector) {
   try {
-    const logs = await coreApi.namespace(namespace).getPodLog(podName, {
-      container: containerName,
-      timestamps: true,
+    const cmdList = new Deno.Command('kubectl', {
+      args: ['get', k8sType.toLowerCase(), '-n', namespace, '-l', labelSelector],
     });
-    return logs;
+    const cmdJSON = new Deno.Command('kubectl', {
+      args: ['get', k8sType.toLowerCase(), '-n', namespace, '-l', labelSelector, '-o', 'json'],
+    });
+    const cmdListResult = await cmdList.output();
+    const cmdJSONResult = await cmdJSON.output();
+    return {
+      resourceList: new TextDecoder().decode(
+        cmdListResult.stderr.length > 0 ? cmdListResult.stderr : cmdListResult.stdout,
+      ),
+      resourceJSON: JSON.parse(
+        new TextDecoder().decode(cmdJSONResult.stderr.length > 0 ? cmdJSONResult.stderr : cmdJSONResult.stdout),
+      ),
+    };
   } catch (error) {
-    return error.message;
+    throw new Error(`Error getting ${k8sType} resources:`, error);
   }
 }
 
-export function getPodList(pods) {
-  const podList = pods.items.length > 0
-    ? pods.items.map((pod) => {
-      const name = pod.metadata?.name ?? 'N/A';
-      const ready = `${pod.status?.containerStatuses?.filter((cs) => cs.ready).length ?? 0}/${
-        pod.status?.containerStatuses?.length ?? 0
-      }`;
-      const status = pod.status?.phase ?? 'Unknown';
-      const restarts = pod.status?.containerStatuses?.reduce((acc, cur) => acc + (cur.restartCount ?? 0), 0) ?? 0;
-      const age = pod.metadata?.creationTimestamp ? calculateAge(pod.metadata.creationTimestamp) : 'N/A';
-      return { name, ready, status, restarts, age };
-    })
-    : [{ name: 'N/A', ready: 'N/A', status: 'N/A', restarts: 'N/A', age: 'N/A' }];
-  const table = new Table();
-  table.fromJson(podList);
-  return table.toString();
+async function getK8sEvents(namespace) {
+  try {
+    const events = new Deno.Command('kubectl', {
+      args: ['get', 'events', '-n', namespace, '--sort-by=.metadata.creationTimestamp'],
+    });
+    const result = await events.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error('Error getting k8s events:', error);
+  }
 }
 
-export function getPVCList(Volumeclaims) {
-  const formattedPVC = Volumeclaims.items.length > 0
-    ? Volumeclaims.items.map((pvc) => {
-      const name = pvc.metadata?.name ?? 'N/A';
-      const status = pvc.status?.phase ?? 'Unknown';
-      const volume = pvc.spec?.volumeName ?? 'N/A';
-      const capacity = `${pvc.spec?.resources?.requests?.storage?.number ?? 'N/A'} ${
-        pvc.spec?.resources?.requests?.storage.suffix ?? 'N/A'
-      }`;
-      const accessModes = pvc.spec?.accessModes?.join(', ') ?? 'N/A';
-      const storageClass = pvc.spec?.storageClassName ?? 'N/A';
-      const age = pvc.metadata?.creationTimestamp ? calculateAge(pvc.metadata.creationTimestamp) : 'N/A';
-      return { name, status, volume, capacity, accessModes, storageClass, age };
-    })
-    : [{
-      name: 'N/A',
-      status: 'N/A',
-      volume: 'N/A',
-      capacity: 'N/A',
-      accessModes: 'N/A',
-      storageClass: 'N/A',
-      age: 'N/A',
-    }];
-
-  const table = new Table();
-  table.fromJson(formattedPVC);
-  return table.toString();
+async function describeK8sResources(k8sType, namespace, resourceName) {
+  try {
+    const describe = new Deno.Command('kubectl', {
+      args: ['describe', k8sType.toLowerCase(), '-n', namespace, resourceName],
+    });
+    const result = await describe.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error(`Error describing ${k8sType} resource:`, error);
+  }
 }
 
-export function getPVList(Volumes) {
-  const formattedPV = Volumes.items.length > 0
-    ? Volumes.items.map((pv) => {
-      const name = pv.metadata?.name ?? 'N/A';
-      const capacity = `${pv.spec?.capacity?.storage?.number ?? 'N/A'} ${pv.spec?.capacity?.storage.suffix ?? 'N/A'}`;
-      const accessModes = pv.spec?.accessModes?.join(', ') ?? 'N/A';
-      const reclaimPolicy = pv.spec?.persistentVolumeReclaimPolicy ?? 'N/A';
-      const status = pv.status?.phase ?? 'Unknown';
-      const claim = `${pv.spec?.claimRef?.namespace ?? 'N/A'}/${pv.spec?.claimRef?.name ?? 'N/A'}`;
-      const storageClass = pv.spec?.storageClassName ?? 'N/A';
-      const age = pv.metadata?.creationTimestamp ? calculateAge(pv.metadata.creationTimestamp) : 'N/A';
-      return { name, capacity, accessModes, reclaimPolicy, status, claim, storageClass, age };
-    })
-    : [{
-      name: 'N/A',
-      capacity: 'N/A',
-      accessModes: 'N/A',
-      reclaimPolicy: 'N/A',
-      status: 'N/A',
-      claim: 'N/A',
-      storageClass: 'N/A',
-      age: 'N/A',
-    }];
-
-  const table = new Table();
-  table.fromJson(formattedPV);
-  return table.toString();
+async function getK8sLogs(namespace, podName, containerName) {
+  try {
+    const logs = new Deno.Command('kubectl', {
+      args: ['logs', '-n', namespace, podName, '-c', containerName],
+    });
+    const result = await logs.output();
+    return new TextDecoder().decode(result.stderr.length > 0 ? result.stderr : result.stdout);
+  } catch (error) {
+    throw new Error(`Error getting logs for ${podName} - ${containerName}:`, error);
+  }
 }
 
 // ##############################
@@ -276,65 +129,65 @@ export function getPVList(Volumes) {
 // ##############################
 
 async function getCodefreshCredentials() {
-  try {
-    const envToken = Deno.env.get('CF_API_KEY');
-    const envUrl = Deno.env.get('CF_BASE_URL');
+  const envToken = Deno.env.get('CF_API_KEY');
+  const envUrl = Deno.env.get('CF_BASE_URL');
 
-    if (envToken && envUrl) {
-      return {
-        headers: { Authorization: envToken },
-        baseUrl: `${envUrl}/api`,
-      };
-    }
-
-    const configPath = Deno.build.os === 'windows'
-      ? `${Deno.env.get('USERPROFILE')}/.cfconfig`
-      : `${Deno.env.get('HOME')}/.cfconfig`;
-
-    const configFileContent = await Deno.readTextFile(configPath);
-    const config = parse(configFileContent);
-
+  if (envToken && envUrl) {
     return {
-      headers: { Authorization: config.contexts[config['current-context']]['token'] },
-      baseUrl: `${config.contexts[config['current-context']]['url']}/api`,
+      headers: { Authorization: envToken },
+      baseUrl: `${envUrl}/api`,
     };
-  } catch (error) {
-    console.error('Failed to get Codefresh credentials:', error);
-    console.error(
-      'Please set the environment variables (CF_API_KEY and CF_BASE_URL) or make sure you have a valid Codefresh config file.',
-    );
-    Deno.exit(1);
   }
+
+  const configPath = Deno.build.os === 'windows'
+    ? `${Deno.env.get('USERPROFILE')}/.cfconfig`
+    : `${Deno.env.get('HOME')}/.cfconfig`;
+
+  const configFileContent = await Deno.readTextFile(configPath);
+  const config = parse(configFileContent);
+  const currentContext = config.contexts?.[config['current-context']];
+
+  if (!currentContext) {
+    throw new Error('Current context not found in Codefresh config.');
+  }
+
+  return {
+    headers: { Authorization: currentContext.token },
+    baseUrl: `${currentContext.url}/api`,
+  };
 }
 
 function getUserRuntimeSelection() {
-  const runtimes = Object.values(RuntimeTypes);
+  const runtimes = Object.values(cfRuntimeTypes);
 
   runtimes.forEach((runtimeName, index) => {
     console.log(`${index + 1}. ${runtimeName}`);
   });
 
-  let selection = Number(prompt('\nWhich Type Of Runtime Are We Using? (Number):'));
-  while (isNaN(selection) || selection < 1 || selection > runtimes.length) {
-    console.log('Invalid selection. Please enter a number corresponding to one of the listed options.');
-    selection = Number(prompt('\nWhich Type Of Runtime Are We Using? (Number):'));
-  }
+  let selection;
+  do {
+    selection = Number(prompt('\nWhich Type Of Runtime Are We Using? (Enter the number):'));
+    if (isNaN(selection) || selection < 1 || selection > runtimes.length) {
+      console.log('Invalid selection. Please enter a number corresponding to one of the listed options.');
+    }
+  } while (isNaN(selection) || selection < 1 || selection > runtimes.length);
+
   return runtimes[selection - 1];
 }
 
 // ##############################
 // CODEFRESH PIPELINES
 // ##############################
-async function getAccountRuntimes(config) {
-  const response = await fetch(`${config.baseUrl}/runtime-environments`, {
+async function getAccountRuntimes(cfConfig) {
+  const response = await fetch(`${cfConfig.baseUrl}/runtime-environments`, {
     method: 'GET',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
   const runtimes = await response.json();
   return runtimes;
 }
 
-async function runTestPipeline(config, runtimeName) {
+async function runTestPipeline(cfConfig, runtimeName) {
   let selection = String(
     prompt(
       '\nTo troubleshoot, we would like to create a Demo Pipeline and run it.\nAfter creating this pipeline we will clean up the resources\n\nWould you like to proceed with the demo pipeline? (y/n): ',
@@ -350,8 +203,10 @@ async function runTestPipeline(config, runtimeName) {
 
   console.log(`\nCreating a demo pipeline to test the ${runtimeName} runtime.`);
 
-  const projectName = 'codefresh-support-package';
+  const projectName = 'CODEFRESH-SUPPORT-PACKAGE';
   const pipelineName = 'TEST-PIPELINE-FOR-SUPPORT';
+  const pipelineYaml =
+    'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"';
 
   const project = JSON.stringify({
     projectName: projectName,
@@ -363,8 +218,7 @@ async function runTestPipeline(config, runtimeName) {
     metadata: {
       name: `${projectName}/${pipelineName}`,
       project: projectName,
-      originalYamlString:
-        'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"',
+      originalYamlString: pipelineYaml,
     },
     spec: {
       concurrency: 1,
@@ -374,10 +228,10 @@ async function runTestPipeline(config, runtimeName) {
     },
   });
 
-  const createProjectResponse = await fetch(`${config.baseUrl}/projects`, {
+  const createProjectResponse = await fetch(`${cfConfig.baseUrl}/projects`, {
     method: 'POST',
     headers: {
-      ...config.headers,
+      ...cfConfig.headers,
       'Content-Type': 'application/json',
     },
     body: project,
@@ -388,18 +242,18 @@ async function runTestPipeline(config, runtimeName) {
   if (!createProjectResponse.ok) {
     console.error('Error creating project:', createProjectResponse.statusText);
     console.error(projectStatus);
-    const getProjectID = await fetch(`${config.baseUrl}/projects/name/${projectName}`, {
+    const getProjectID = await fetch(`${cfConfig.baseUrl}/projects/name/${projectName}`, {
       method: 'GET',
-      headers: config.headers,
+      headers: cfConfig.headers,
     });
     const projectResponse = await getProjectID.json();
     projectStatus.id = projectResponse.id;
   }
 
-  const createPipelineResponse = await fetch(`${config.baseUrl}/pipelines`, {
+  const createPipelineResponse = await fetch(`${cfConfig.baseUrl}/pipelines`, {
     method: 'POST',
     headers: {
-      ...config.headers,
+      ...cfConfig.headers,
       'Content-Type': 'application/json',
     },
     body: pipeline,
@@ -408,21 +262,36 @@ async function runTestPipeline(config, runtimeName) {
   const pipelineStatus = await createPipelineResponse.json();
 
   if (!createPipelineResponse.ok) {
-    console.error('Error creating pipeline:', createPipelineResponse.statusText);
-    console.error(pipelineStatus);
-    const getPipelineID = await fetch(`${config.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
-      method: 'GET',
-      headers: config.headers,
-    });
-    const pipelineResponse = await getPipelineID.json();
-    pipelineStatus.metadata = {};
-    pipelineStatus.metadata.id = pipelineResponse.metadata.id;
+    try {
+      console.error('Error creating pipeline:', createPipelineResponse.statusText);
+      console.error(pipelineStatus);
+      const getPipelineID = await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
+        method: 'GET',
+        headers: cfConfig.headers,
+      });
+      const pipelineResponse = await getPipelineID.json();
+      pipelineStatus.metadata = {};
+      pipelineStatus.metadata.id = pipelineResponse.metadata.id;
+      pipelineResponse.spec.runtimeEnvironment = pipelineResponse.spec.runtimeEnvironment || {};
+      pipelineResponse.spec.runtimeEnvironment.name = runtimeName;
+
+      await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
+        method: 'PUT',
+        headers: {
+          ...cfConfig.headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pipelineResponse),
+      });
+    } catch (error) {
+      throw new Error('Error getting / updating pipeline:', error);
+    }
   }
 
-  const runPipelineResponse = await fetch(`${config.baseUrl}/pipelines/run/${pipelineStatus.metadata.id}`, {
+  const runPipelineResponse = await fetch(`${cfConfig.baseUrl}/pipelines/run/${pipelineStatus.metadata.id}`, {
     method: 'POST',
     headers: {
-      ...config.headers,
+      ...cfConfig.headers,
       'Content-Type': 'application/json',
     },
   });
@@ -430,43 +299,48 @@ async function runTestPipeline(config, runtimeName) {
   const runPipelineStatus = await runPipelineResponse.json();
 
   if (!runPipelineResponse.ok) {
-    console.error('Error running pipeline:', runPipelineResponse.statusText);
-    console.error(runPipelineStatus);
-    return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+    try {
+      console.error('Error running pipeline:', runPipelineResponse.statusText);
+      console.error(runPipelineStatus);
+      return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+    } catch (error) {
+      throw new Error('Error running pipeline:', error);
+    }
   }
 
-  console.log(`Demo pipeline created and running build with id of ${runPipelineStatus}.`);
+  console.log(`\nDemo pipeline created and running build with id of ${runPipelineStatus}.`);
 
-  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id };
+  // Wait 30 seconds to allow the pipeline to run
+  await new Promise((resolve) => setTimeout(resolve, 30000));
+
+  return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id, buildID: runPipelineStatus };
 }
 
-async function deleteTestPipeline(config, pipelineID, projectID) {
-  const deletePipelineResponse = await fetch(`${config.baseUrl}/pipelines/${pipelineID}`, {
+async function deleteTestPipeline(cfConfig, pipelineID, projectID) {
+  const deletePipelineResponse = await fetch(`${cfConfig.baseUrl}/pipelines/${pipelineID}`, {
     method: 'DELETE',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
 
   if (!deletePipelineResponse.ok) {
-    console.error('Error deleting pipeline:', await deletePipelineResponse.text());
-    Deno.exit(1);
+    throw new Error('Error deleting pipeline:', await deletePipelineResponse.text());
   }
 
-  const deleteProjectResponse = await fetch(`${config.baseUrl}/projects/${projectID}`, {
+  const deleteProjectResponse = await fetch(`${cfConfig.baseUrl}/projects/${projectID}`, {
     method: 'DELETE',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
 
   if (!deleteProjectResponse.ok) {
-    console.error('Error deleting project:', await deleteProjectResponse.text());
-    Deno.exit(1);
+    throw new Error('Error deleting project:', await deleteProjectResponse.text());
   }
 
   console.log('Demo pipeline and project deleted successfully.');
 }
 
-async function gatherPipelinesRuntime(config) {
+async function gatherPipelinesRuntime(cfConfig) {
   try {
-    const runtimes = await getAccountRuntimes(config);
+    const runtimes = await getAccountRuntimes(cfConfig);
     console.log('');
     runtimes.forEach((re, index) => {
       console.log(`${index + 1}. ${re.metadata.name}`);
@@ -477,41 +351,43 @@ async function gatherPipelinesRuntime(config) {
     let pipelineExecutionOutput;
 
     if (runtimes.length !== 0) {
-      let selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
-      while (isNaN(selection) || selection < 1 || selection > runtimes.length) {
-        console.log('Invalid selection. Please enter a number corresponding to one of the listed runtimes.');
+      let selection;
+      do {
         selection = Number(prompt('\nWhich Pipelines Runtime Are We Working With? (Number): '));
-      }
+        if (isNaN(selection) || selection < 1 || selection > runtimes.length) {
+          console.log('Invalid selection. Please enter a number corresponding to one of the listed runtimes.');
+        }
+      } while (isNaN(selection) || selection < 1 || selection > runtimes.length);
 
       reSpec = runtimes[selection - 1];
       namespace = reSpec.runtimeScheduler.cluster.namespace;
 
-      pipelineExecutionOutput = await runTestPipeline(config, reSpec.metadata.name);
+      pipelineExecutionOutput = await runTestPipeline(cfConfig, reSpec.metadata.name);
     } else {
       console.log('No Pipelines Runtimes found in the account.');
-      namespace = await selectNamespace();
+      namespace = await getK8sNamespace();
     }
 
-    console.log(`\nGathering Data For ${reSpec.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`);
+    console.log(
+      `\nGathering Data For ${reSpec?.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`,
+    );
 
-    // Wait 15 seconds to allow the pipeline to run
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-
-    await fetchAndSaveData(RuntimeTypes.pipelines, namespace);
+    await fetchAndSaveData(namespace);
 
     if (reSpec) {
       await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
     }
 
-    console.log('Data Gathered Successfully.');
+    console.log('\nData Gathered Successfully.');
 
     if (pipelineExecutionOutput) {
-      await deleteTestPipeline(config, pipelineExecutionOutput?.pipelineID, pipelineExecutionOutput?.projectID);
+      await Deno.writeTextFile(`${dirPath}/testPipelineBuildId.txt`, pipelineExecutionOutput.buildID);
+      await deleteTestPipeline(cfConfig, pipelineExecutionOutput.pipelineID, pipelineExecutionOutput.projectID);
     }
 
     await prepareAndCleanup();
   } catch (error) {
-    console.error(`Error gathering Pipelines Runtime data:`, error);
+    throw new Error('Error gathering Pipelines Runtime data:', error);
   }
 }
 
@@ -520,88 +396,85 @@ async function gatherPipelinesRuntime(config) {
 // ##############################
 async function gatherGitopsRuntime() {
   try {
-    const namespace = await selectNamespace();
+    const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
-    await fetchAndSaveData(RuntimeTypes.gitops, namespace);
+    await fetchAndSaveData(namespace);
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
-    console.error(`Error gathering GitOps runtime data:`, error);
-    Deno.exit(1);
+    throw new Error(`Error gathering GitOps runtime data:`, error);
   }
 }
 // ##############################
 // CODEFRESH ONPREM
 // ##############################
-async function getAllAccounts(config) {
-  const response = await fetch(`${config.baseUrl}/admin/accounts`, {
+async function getAllAccounts(cfConfig) {
+  const response = await fetch(`${cfConfig.baseUrl}/admin/accounts`, {
     method: 'GET',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
   const accounts = await response.json();
   await writeCodefreshFiles(accounts, 'onPrem-accounts');
 }
 
-async function getAllRuntimes(config) {
-  const response = await fetch(`${config.baseUrl}/admin/runtime-environments`, {
+async function getAllRuntimes(cfConfig) {
+  const response = await fetch(`${cfConfig.baseUrl}/admin/runtime-environments`, {
     method: 'GET',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
   const onPremRuntimes = await response.json();
   await writeCodefreshFiles(onPremRuntimes, 'onPrem-runtimes');
 }
 
-async function getTotalUsers(config) {
-  const response = await fetch(`${config.baseUrl}/admin/user?limit=1&page=1`, {
+async function getTotalUsers(cfConfig) {
+  const response = await fetch(`${cfConfig.baseUrl}/admin/user?limit=1&page=1`, {
     method: 'GET',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
   const users = await response.json();
   await writeCodefreshFiles({ total: users.total }, 'onPrem-totalUsers');
 }
 
-async function getSystemFeatureFlags(config) {
-  const response = await fetch(`${config.baseUrl}/admin/features`, {
+async function getSystemFeatureFlags(cfConfig) {
+  const response = await fetch(`${cfConfig.baseUrl}/admin/features`, {
     method: 'GET',
-    headers: config.headers,
+    headers: cfConfig.headers,
   });
   const onPremSystemFF = await response.json();
   await writeCodefreshFiles(onPremSystemFF, 'onPrem-systemFeatureFlags');
 }
 
-async function gatherOnPrem(config) {
-  if (config.baseUrl === 'https://g.codefresh.io/api') {
+async function gatherOnPrem(cfConfig) {
+  if (cfConfig.baseUrl === 'https://g.codefresh.io/api') {
     console.error(
-      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${RuntimeTypes.pipelines} or ${RuntimeTypes.gitops}.`,
+      `\nCannot gather On-Prem data for Codefresh SaaS. Please select either ${cfRuntimeTypes.pipelines} or ${cfRuntimeTypes.gitops}.\n If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.`,
     );
-    console.error(
-      'If you need to gather data for Codefresh On-Prem, please update your ./cfconfig conext (or Envs) to point to an On-Prem instance.',
-    );
-    Deno.exit(1);
+    throw new Error('Invalid Codefresh On-Prem URL.');
   }
+
   try {
-    const namespace = await selectNamespace();
+    const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
-    await fetchAndSaveData(RuntimeTypes.onprem, namespace);
+
+    await fetchAndSaveData(namespace);
+
     await Promise.all([
-      getAllAccounts(config),
-      getAllRuntimes(config),
-      getTotalUsers(config),
-      getSystemFeatureFlags(config),
+      getAllAccounts(cfConfig),
+      getAllRuntimes(cfConfig),
+      getTotalUsers(cfConfig),
+      getSystemFeatureFlags(cfConfig),
     ]);
+
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup();
   } catch (error) {
-    console.error(`Error gathering On-Prem data:`, error);
+    throw new Error(`Error gathering On-Prem data: ${error.message}`);
   }
 }
 
 // ##############################
 // HELPER FUNCTIONS
 // ##############################
-async function creatDirectory(path) {
-  await Deno.mkdir(`${dirPath}/${path}/`, { recursive: true });
-}
 
 async function writeCodefreshFiles(data, name) {
   const filePath = `${dirPath}/${name}.yaml`;
@@ -609,12 +482,12 @@ async function writeCodefreshFiles(data, name) {
   await Deno.writeTextFile(filePath, fileContent);
 }
 
-async function writeGetApiCalls(resources, path) {
-  const sem = getSemaphore(path, numOfProcesses);
+async function writeGetApiCalls(resources, k8sType) {
+  const sem = getSemaphore(k8sType, numOfProcesses);
   await Promise.all(resources.map(async (item) => {
     await sem.acquire();
     try {
-      const filePath = `${dirPath}/${path}/${item.metadata.name}_get.yaml`;
+      const filePath = `${dirPath}/${k8sType}/${item.metadata.name}.yaml`;
       const fileContent = toYaml(item, { skipInvalid: true });
       await Deno.writeTextFile(filePath, fileContent);
     } finally {
@@ -624,87 +497,78 @@ async function writeGetApiCalls(resources, path) {
 }
 
 async function prepareAndCleanup() {
-  console.log(`Saving data to ./codefresh-support-package-${timestamp}.zip`);
-  await compress(dirPath, `./codefresh-support-package-${timestamp}.zip`, { overwrite: true });
+  console.log(`Saving data to ${supportPackageZip}`);
+  await compress(dirPath, `${supportPackageZip}`, { overwrite: true });
 
   console.log('Cleaning up temp directory');
   await Deno.remove(dirPath, { recursive: true });
 
-  console.log(`\nPlease attach ./codefresh-support-package-${timestamp}.zip to your support ticket.`);
+  console.log(`\nPlease attach ${supportPackageZip} to your support ticket.`);
 }
 
-export async function fetchAndSaveData(type, namespace) {
-  await Deno.mkdir(`${dirPath}/`, { recursive: true });
+async function fetchAndSaveData(namespace) {
+  for (const k8sType of k8sResourceTypes) {
+    await Deno.mkdir(`${dirPath}/${k8sType}/`, { recursive: true });
 
-  await Deno.writeTextFile(`${dirPath}/cf-support-version.txt`, VERSION);
+    console.log(`Gathering ${k8sType} data...`);
 
-  for (const [itemType, fetcher] of Object.entries(getK8sResources(type, namespace) || {})) {
-    const resources = await fetcher();
+    const labelSelector = (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes')
+      ? 'io.codefresh.accountName'
+      : '';
+    const { resourceList, resourceJSON } = await getK8sResources(k8sType, namespace, labelSelector);
 
-    if (itemType === 'Events') {
-      const formattedEvents = getFormattedEvents(resources);
-      await Deno.writeTextFile(`${dirPath}/Events.txt`, formattedEvents);
+    await Deno.writeTextFile(`${dirPath}/${k8sType}/_${k8sType}List.txt`, resourceList);
+
+    if (k8sType === 'PersistentVolumeClaims' || k8sType === 'PersistentVolumes') {
+      if (resourceJSON.items.length !== 0) {
+        await writeGetApiCalls(resourceJSON.items, k8sType);
+      }
       continue;
     }
 
-    if (itemType === 'HelmReleases') {
-      const helmReleases = getHelmReleases(resources);
-      await writeCodefreshFiles(helmReleases, 'HelmReleases');
-      continue;
-    }
+    const sem = getSemaphore(k8sType, numOfProcesses);
 
-    await creatDirectory(itemType);
-
-    if (itemType === 'Pods') {
-      const podList = getPodList(resources);
-      await Deno.writeTextFile(`${dirPath}/PodList.txt`, podList);
-
+    if (k8sType === 'Pods') {
       await Promise.all(
-        resources.items.map(async (resource) => {
+        resourceJSON.items.map(async (resource) => {
           const podName = resource.metadata.name;
           const containers = resource.spec.containers;
 
           await Promise.all(containers.map(async (container) => {
-            const log = await getK8sLogs(namespace, podName, container.name);
-            const logFileName = `${dirPath}/${itemType}/${podName}_${container.name}_log.log`;
-            await Deno.writeTextFile(logFileName, log);
+            await sem.acquire();
+            try {
+              const log = await getK8sLogs(namespace, podName, container.name);
+              const logFileName = `${dirPath}/${k8sType}/${podName}_${container.name}.log`;
+              await Deno.writeTextFile(logFileName, log);
+            } finally {
+              sem.release();
+            }
           }));
         }),
       );
     }
 
-    if (itemType === 'Volumeclaims') {
-      const pvcList = getPVCList(resources);
-      await Deno.writeTextFile(`${dirPath}/VolumeClaimsList.txt`, pvcList);
-      await writeGetApiCalls(resources.items, itemType);
-      continue;
-    }
-
-    if (itemType === 'Volumes') {
-      const pvList = getPVList(resources);
-      await Deno.writeTextFile(`${dirPath}/VolumesList.txt`, pvList);
-      await writeGetApiCalls(resources.items, itemType);
-      continue;
-    }
-
-    const sem = getSemaphore(itemType, numOfProcesses);
-    await Promise.all(resources.items.map(async (resource) => {
+    await Promise.all(resourceJSON.items.map(async (resource) => {
       await sem.acquire();
       try {
-        const describeOutput = await describeK8sResources(itemType, namespace, resource.metadata.name);
-        const describeFileName = `${dirPath}/${itemType}/${resource.metadata.name}_describe.yaml`;
+        const describeOutput = await describeK8sResources(k8sType, namespace, resource.metadata.name);
+        const describeFileName = `${dirPath}/${k8sType}/${resource.metadata.name}.yaml`;
         await Deno.writeTextFile(describeFileName, describeOutput);
+      } catch (error) {
+        console.error(error);
       } finally {
         sem.release();
       }
     }));
   }
+
+  await Deno.writeTextFile(`${dirPath}/Events.txt`, await getK8sEvents(namespace));
+  await Deno.writeTextFile(`${dirPath}/cf-support-version.txt`, VERSION);
 }
 
 // ##############################
 // MAIN
 // ##############################
-
 async function main() {
   try {
     console.log(`App Version: ${VERSION}\n`);
@@ -712,13 +576,13 @@ async function main() {
     const cfConfig = await getCodefreshCredentials();
 
     switch (runtimeSelected) {
-      case RuntimeTypes.pipelines:
+      case cfRuntimeTypes.pipelines:
         await gatherPipelinesRuntime(cfConfig);
         break;
-      case RuntimeTypes.gitops:
+      case cfRuntimeTypes.gitops:
         await gatherGitopsRuntime();
         break;
-      case RuntimeTypes.onprem:
+      case cfRuntimeTypes.onprem:
         await gatherOnPrem(cfConfig);
         break;
     }
