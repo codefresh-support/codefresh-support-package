@@ -1,8 +1,8 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
+  "image": "mcr.microsoft.com/devcontainers/go:1.23",
+  "onCreateCommand": "go install github.com/spf13/cobra-cli@v1.3.0",
   "customizations": {
     "vscode": {
       "settings": {
