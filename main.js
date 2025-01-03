@@ -1,5 +1,6 @@
 'use strict';
-import { compress } from '@fakoua/zip-ts';
+
+import { tgz } from "jsr:@deno-library/compress";
 import { parse, stringify as toYaml } from '@std/yaml';
 import { getSemaphore } from '@henrygd/semaphore';
 
@@ -13,7 +14,7 @@ const cfRuntimeTypes = {
 
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
-const supportPackageZip = `./codefresh-support-package-${timestamp}.zip`;
+const supportPackageZip = `./codefresh-support-package-${timestamp}.tar.gz`;
 const numOfProcesses = 5;
 
 // ##############################
@@ -190,7 +191,7 @@ async function getAccountRuntimes(cfConfig) {
 async function runTestPipeline(cfConfig, runtimeName) {
   let selection = String(
     prompt(
-      '\nTo troubleshoot, we would like to create a Demo Pipeline and run it.\nAfter creating this pipeline we will clean up the resources\n\nWould you like to proceed with the demo pipeline? (y/n): ',
+      '\nTo troubleshoot, we would like to create a Demo Pipeline and run it.\n\nWould you like to proceed with the demo pipeline? (y/n): ',
     ),
   );
   while (selection !== 'y' && selection !== 'n') {
@@ -206,7 +207,7 @@ async function runTestPipeline(cfConfig, runtimeName) {
   const projectName = 'CODEFRESH-SUPPORT-PACKAGE';
   const pipelineName = 'TEST-PIPELINE-FOR-SUPPORT';
   const pipelineYaml =
-    'version: "1.0"\n\nsteps:\n\n  test:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"';
+    'version: "1.0"\n\nsteps:\n\n  freestyle:\n    title: Running test\n    type: freestyle\n    arguments:\n      image: alpine\n      commands:\n        - echo "Hello Test"';
 
   const project = JSON.stringify({
     projectName: projectName,
@@ -240,8 +241,6 @@ async function runTestPipeline(cfConfig, runtimeName) {
   const projectStatus = await createProjectResponse.json();
 
   if (!createProjectResponse.ok) {
-    console.error('Error creating project:', createProjectResponse.statusText);
-    console.error(projectStatus);
     const getProjectID = await fetch(`${cfConfig.baseUrl}/projects/name/${projectName}`, {
       method: 'GET',
       headers: cfConfig.headers,
@@ -263,8 +262,6 @@ async function runTestPipeline(cfConfig, runtimeName) {
 
   if (!createPipelineResponse.ok) {
     try {
-      console.error('Error creating pipeline:', createPipelineResponse.statusText);
-      console.error(pipelineStatus);
       const getPipelineID = await fetch(`${cfConfig.baseUrl}/pipelines/${projectName}%2f${pipelineName}`, {
         method: 'GET',
         headers: cfConfig.headers,
@@ -316,27 +313,6 @@ async function runTestPipeline(cfConfig, runtimeName) {
   return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id, buildID: runPipelineStatus };
 }
 
-async function deleteTestPipeline(cfConfig, pipelineID, projectID) {
-  const deletePipelineResponse = await fetch(`${cfConfig.baseUrl}/pipelines/${pipelineID}`, {
-    method: 'DELETE',
-    headers: cfConfig.headers,
-  });
-
-  if (!deletePipelineResponse.ok) {
-    throw new Error('Error deleting pipeline:', await deletePipelineResponse.text());
-  }
-
-  const deleteProjectResponse = await fetch(`${cfConfig.baseUrl}/projects/${projectID}`, {
-    method: 'DELETE',
-    headers: cfConfig.headers,
-  });
-
-  if (!deleteProjectResponse.ok) {
-    throw new Error('Error deleting project:', await deleteProjectResponse.text());
-  }
-
-  console.log('Demo pipeline and project deleted successfully.');
-}
 
 async function gatherPipelinesRuntime(cfConfig) {
   try {
@@ -382,7 +358,6 @@ async function gatherPipelinesRuntime(cfConfig) {
 
     if (pipelineExecutionOutput) {
       await Deno.writeTextFile(`${dirPath}/testPipelineBuildId.txt`, pipelineExecutionOutput.buildID);
-      await deleteTestPipeline(cfConfig, pipelineExecutionOutput.pipelineID, pipelineExecutionOutput.projectID);
     }
 
     await prepareAndCleanup();
@@ -498,7 +473,7 @@ async function writeGetApiCalls(resources, k8sType) {
 
 async function prepareAndCleanup() {
   console.log(`Saving data to ${supportPackageZip}`);
-  await compress(dirPath, `${supportPackageZip}`, { overwrite: true });
+  await tgz.compress(dirPath, supportPackageZip);
 
   console.log('Cleaning up temp directory');
   await Deno.remove(dirPath, { recursive: true });
