@@ -14,7 +14,6 @@ const cfRuntimeTypes = {
 
 const timestamp = new Date().getTime();
 const dirPath = `./codefresh-support-${timestamp}`;
-const supportPackageZip = `./codefresh-support-package-${timestamp}.tar.gz`;
 const numOfProcesses = 5;
 
 // ##############################
@@ -360,7 +359,7 @@ async function gatherPipelinesRuntime(cfConfig) {
       await Deno.writeTextFile(`${dirPath}/testPipelineBuildId.txt`, pipelineExecutionOutput.buildID);
     }
 
-    await prepareAndCleanup();
+    await prepareAndCleanup('pipelines');
   } catch (error) {
     throw new Error('Error gathering Pipelines Runtime data:', error);
   }
@@ -375,7 +374,7 @@ async function gatherGitopsRuntime() {
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
     await fetchAndSaveData(namespace);
     console.log('\nData Gathered Successfully.');
-    await prepareAndCleanup();
+    await prepareAndCleanup('gitops');
   } catch (error) {
     throw new Error(`Error gathering GitOps runtime data:`, error);
   }
@@ -441,7 +440,7 @@ async function gatherOnPrem(cfConfig) {
     ]);
 
     console.log('\nData Gathered Successfully.');
-    await prepareAndCleanup();
+    await prepareAndCleanup('onprem');
   } catch (error) {
     throw new Error(`Error gathering On-Prem data: ${error.message}`);
   }
@@ -471,7 +470,8 @@ async function writeGetApiCalls(resources, k8sType) {
   }));
 }
 
-async function prepareAndCleanup() {
+async function prepareAndCleanup(selectedRuntime) {
+  const supportPackageZip = `./cf-support-${selectedRuntime}-${timestamp}.tar.gz`;
   console.log(`Saving data to ${supportPackageZip}`);
   await tgz.compress(dirPath, supportPackageZip);
 
