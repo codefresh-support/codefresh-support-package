@@ -1,6 +1,4 @@
 'use strict';
-
-import { tgz } from "jsr:@deno-library/compress";
 import { parse, stringify as toYaml } from '@std/yaml';
 import { getSemaphore } from '@henrygd/semaphore';
 
@@ -10,6 +8,7 @@ const cfRuntimeTypes = {
   pipelines: 'Pipelines Runtime',
   gitops: 'GitOps Runtime',
   onprem: 'On-Prem',
+  ossargo: 'Open Source Argo',
 };
 
 const timestamp = new Date().getTime();
@@ -20,22 +19,43 @@ const numOfProcesses = 5;
 // KUBERNETES
 // ##############################
 
-const k8sResourceTypes = [
-  'Applications',
-  'ApplicationSets',
+const k8sGeneral = [
   'Configmaps',
-  'CronJobs',
   'DaemonSets',
   'Deployments',
   'Jobs',
   'Nodes',
-  'PersistentVolumeClaims',
-  'PersistentVolumes',
   'Pods',
   'ServiceAccounts',
   'Services',
   'StatefulSets',
+];
+
+const k8sClassicOnPrem = [
+  'CronJobs',
+  'PersistentVolumeClaims',
+  'PersistentVolumes',
   'Storageclass',
+];
+
+const k8sGitOps = [
+  'Products',
+  'PromotionFlows',
+  'PromotionPolicies',
+  'PromotionTemplates',
+  'RestrictedGitSources',
+];
+
+const k8sArgo = [
+  'AnalysisRuns',
+  'AnalysisTemplates',
+  'Applications',
+  'ApplicationSets',
+  'EventBus',
+  'EventSources',
+  'Experiments',
+  'Rollouts',
+  'Sensors',
 ];
 
 async function getK8sNamespace() {
@@ -312,7 +332,6 @@ async function runTestPipeline(cfConfig, runtimeName) {
   return { pipelineID: pipelineStatus.metadata.id, projectID: projectStatus.id, buildID: runPipelineStatus };
 }
 
-
 async function gatherPipelinesRuntime(cfConfig) {
   try {
     const runtimes = await getAccountRuntimes(cfConfig);
@@ -347,7 +366,7 @@ async function gatherPipelinesRuntime(cfConfig) {
       `\nGathering Data For ${reSpec?.metadata.name ?? 'Pipelines Runtime'} in the "${namespace}" namespace.`,
     );
 
-    await fetchAndSaveData(namespace);
+    await fetchAndSaveData(namespace, [...k8sGeneral, ...k8sClassicOnPrem]);
 
     if (reSpec) {
       await writeCodefreshFiles(reSpec, 'pipelines-runtime-spec');
@@ -372,7 +391,7 @@ async function gatherGitopsRuntime() {
   try {
     const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for the GitOps Runtime.`);
-    await fetchAndSaveData(namespace);
+    await fetchAndSaveData(namespace, [...k8sGeneral, ...k8sGitOps, ...k8sArgo]);
     console.log('\nData Gathered Successfully.');
     await prepareAndCleanup('gitops');
   } catch (error) {
@@ -430,7 +449,7 @@ async function gatherOnPrem(cfConfig) {
     const namespace = await getK8sNamespace();
     console.log(`\nGathering data in "${namespace}" namespace for Codefresh On-Prem.`);
 
-    await fetchAndSaveData(namespace);
+    await fetchAndSaveData(namespace, [...k8sGeneral, ...k8sClassicOnPrem]);
 
     await Promise.all([
       getAllAccounts(cfConfig),
@@ -443,6 +462,21 @@ async function gatherOnPrem(cfConfig) {
     await prepareAndCleanup('onprem');
   } catch (error) {
     throw new Error(`Error gathering On-Prem data: ${error.message}`);
+  }
+}
+
+// ##############################
+// OSS ARGO
+// ##############################
+async function gatherOssArgo() {
+  try {
+    const namespace = await getK8sNamespace();
+    console.log(`\nGathering data in "${namespace}" namespace for Open Source Argo.`);
+    await fetchAndSaveData(namespace, [...k8sGeneral, ...k8sArgo]);
+    console.log('\nData Gathered Successfully.');
+    await prepareAndCleanup('ossargo');
+  } catch (error) {
+    throw new Error(`Error gathering Open Source Argo data:`, error);
   }
 }
 
@@ -473,7 +507,14 @@ async function writeGetApiCalls(resources, k8sType) {
 async function prepareAndCleanup(selectedRuntime) {
   const supportPackageZip = `./cf-support-${selectedRuntime}-${timestamp}.tar.gz`;
   console.log(`Saving data to ${supportPackageZip}`);
-  await tgz.compress(dirPath, supportPackageZip);
+  const tarFileCmd = new Deno.Command('tar', {
+    args: ['-czf', supportPackageZip, dirPath],
+  });
+  const result = await tarFileCmd.output();
+
+  if (result.stderr.length > 0) {
+    throw new Error('Error creating tar file:', new TextDecoder().decode(result.stderr));
+  }
 
   console.log('Cleaning up temp directory');
   await Deno.remove(dirPath, { recursive: true });
@@ -481,8 +522,8 @@ async function prepareAndCleanup(selectedRuntime) {
   console.log(`\nPlease attach ${supportPackageZip} to your support ticket.`);
 }
 
-async function fetchAndSaveData(namespace) {
-  for (const k8sType of k8sResourceTypes) {
+async function fetchAndSaveData(namespace, k8sResources) {
+  for (const k8sType of k8sResources) {
     await Deno.mkdir(`${dirPath}/${k8sType}/`, { recursive: true });
 
     console.log(`Gathering ${k8sType} data...`);
@@ -498,7 +539,9 @@ async function fetchAndSaveData(namespace) {
       resourceList = getResources.resourceList;
       resourceJSON = getResources.resourceJSON;
     } catch (_error) {
-      console.error(`Error getting ${k8sType} resources: error: the server doesn't have a resource type "${k8sType.toLocaleLowerCase()}"`);
+      console.error(
+        `Error getting ${k8sType} resources: error: the server doesn't have a resource type "${k8sType.toLocaleLowerCase()}"`,
+      );
       continue;
     }
 
@@ -558,7 +601,9 @@ async function main() {
   try {
     console.log(`App Version: ${VERSION}\n`);
     const runtimeSelected = getUserRuntimeSelection();
-    const cfConfig = await getCodefreshCredentials();
+    const cfConfig = (runtimeSelected === cfRuntimeTypes.onprem || runtimeSelected === cfRuntimeTypes.classic)
+      ? await getCodefreshCredentials()
+      : null;
 
     switch (runtimeSelected) {
       case cfRuntimeTypes.pipelines:
@@ -569,6 +614,9 @@ async function main() {
         break;
       case cfRuntimeTypes.onprem:
         await gatherOnPrem(cfConfig);
+        break;
+      case cfRuntimeTypes.ossargo:
+        await gatherOssArgo();
         break;
     }
   } catch (error) {
