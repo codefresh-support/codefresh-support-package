@@ -1,18 +1,13 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
   "customizations": {
     "vscode": {
-      "settings": {
-        "deno.enable": true,
-        "deno.lint": true
-      },
       "extensions": [
-        "denoland.vscode-deno",
         "davidanson.vscode-markdownlint",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "golang.go"
       ]
     }
   }
