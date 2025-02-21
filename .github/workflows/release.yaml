@@ -6,7 +6,7 @@ on:
       - 'v*'  # Trigger only on tags starting with "v" (e.g., v1.0.0)
 
 jobs:
-  release:
+  build-and-release:
     runs-on: ubuntu-latest
 
     permissions:
@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: '1.24'  # Use the version of Go your project requires
 
-      - name: Install GoReleaser
+      - name: Run goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest  # Or pin a specific version
