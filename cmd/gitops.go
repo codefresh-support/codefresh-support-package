@@ -23,22 +23,50 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
+	"github.com/codefresh-support/codefresh-support-package/internal/utils"
 	"github.com/spf13/cobra"
 )
+
+var gitOpsNamespace string
 
 // gitopsCmd represents the gitops command
 var gitopsCmd = &cobra.Command{
 	Use:   "gitops",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Collect data for the Codefresh GitOps Runtime",
+	Long: `Collect data for the Codefresh GitOps Runtime
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Example:
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("gitops called")
+		const RuntimeType = "Codefresh GitOps Runtime"
+		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
+		if gitOpsNamespace == "" {
+			var err error
+			gitOpsNamespace, err = k8s.SelectNamespace(RuntimeType)
+			if err != nil {
+				cmd.PrintErrln("Error selecting namespace:", err)
+				return
+			}
+		}
+		cmd.Printf("Gathering data in %s namespace for %s...\n", gitOpsNamespace, RuntimeType)
+
+		K8sResources := append(k8s.K8sGeneral, append(k8s.K8sGitOps, k8s.K8sArgo...)...)
+
+		if err := utils.FetchAndSaveData(gitOpsNamespace, K8sResources, dirPath); err != nil {
+			cmd.PrintErrln("Error fetching and saving data:", err)
+			return
+		}
+
+		cmd.Println("Data Gathered Successfully.")
+
+		if err := utils.PreparePackage(strings.ReplaceAll(strings.ToLower(RuntimeType), " ", "-"), dirPath); err != nil {
+			cmd.PrintErrln("Error preparing package:", err)
+			return
+		}
 	},
 }
 
@@ -54,4 +82,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// gitopsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	gitopsCmd.Flags().StringVarP(&gitOpsNamespace, "namespace", "n", "", "Specify the namespace")
+
 }

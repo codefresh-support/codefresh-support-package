@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 func Describe(k8sType, namespace, resourceName string) (string, error) {
-	cmd := exec.Command("kubectl", "describe", k8sType, "-n", namespace, resourceName)
+	cmd := exec.Command("kubectl", "describe", strings.ToLower(k8sType), "-n", namespace, resourceName)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out

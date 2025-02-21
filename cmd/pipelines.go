@@ -23,7 +23,12 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/codefresh-support/codefresh-support-package/internal/codefresh"
+	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
+	"github.com/codefresh-support/codefresh-support-package/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +43,69 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("pipelines called")
+		const RuntimeType = "Codefresh Pipelines Runtime"
+		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
+		cfConfig, err := codefresh.GetCodefreshCreds()
+		if err != nil {
+			cmd.PrintErrln("Error getting Codefresh credentials:", err)
+			return
+		}
+
+		runtimes, err := codefresh.AccountRuntimes(cfConfig)
+		if err != nil {
+			cmd.PrintErrln("Error getting Codefresh runtimes:", err)
+			return
+		}
+
+		var pipelinesNamespace string
+		var reSpec map[string]interface{}
+
+		if len(runtimes) != 0 {
+			var selection int
+			for {
+				cmd.Println("Please select the runtime to gather data from (Number):")
+				_, err := fmt.Scanf("%d", &selection)
+				if err != nil || selection < 1 || selection > len(runtimes) {
+					cmd.Println("Invalid selection. Please enter a number corresponding to one of the listed runtimes.")
+					continue
+				}
+				break
+
+			}
+			reSpec = runtimes[selection-1]
+			pipelinesNamespace = reSpec["runtimeScheduler"].(map[string]interface{})["cluster"].(map[string]interface{})["namespace"].(string)
+		} else {
+			cmd.Println("No runtimes found in Codefresh account.")
+			pipelinesNamespace, err = k8s.SelectNamespace(RuntimeType)
+			if err != nil {
+				cmd.PrintErrf("error getting Kubernetes namespace: %v", err)
+				return
+			}
+		}
+
+		cmd.Printf("Gathering data in %s namespace for %s...\n", pipelinesNamespace, RuntimeType)
+
+		K8sResources := append(k8s.K8sGeneral, k8s.K8sClassicOnPrem...)
+
+		if err := utils.FetchAndSaveData(pipelinesNamespace, K8sResources, dirPath); err != nil {
+			cmd.PrintErrln("Error fetching and saving data:", err)
+			return
+		}
+
+		if reSpec != nil {
+			if err := utils.WriteYaml(reSpec, "pipelines-runtime-spec", dirPath); err != nil {
+				cmd.PrintErrln("Error writing runtime spec:", err)
+				return
+			}
+		}
+
+		cmd.Println("Data Gathered Successfully.")
+
+		if err := utils.PreparePackage(strings.ReplaceAll(strings.ToLower(RuntimeType), " ", "-"), dirPath); err != nil {
+			cmd.PrintErrln("Error preparing package:", err)
+			return
+		}
+
 	},
 }
 

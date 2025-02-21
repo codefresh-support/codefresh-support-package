@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
-
 	"strings"
 )
 
@@ -26,7 +25,7 @@ func SelectNamespace(runtimeType string) (string, error) {
 
 	var selection int
 	for {
-		fmt.Printf("\nWhich namespace ss %s installed in? (Number): ", runtimeType)
+		fmt.Printf("\nWhich namespace the %s installed in? (Number): ", runtimeType)
 		_, err := fmt.Scanf("%d", &selection)
 		if err != nil || selection < 1 || selection > len(namespaceList) {
 			fmt.Println("Invalid selection. Please enter a number corresponding to one of the listed namespaces.")

@@ -23,9 +23,15 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
+	"github.com/codefresh-support/codefresh-support-package/internal/utils"
 	"github.com/spf13/cobra"
 )
+
+var ossNamespace string
 
 // ossCmd represents the oss command
 var ossCmd = &cobra.Command{
@@ -38,7 +44,31 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("oss called")
+		const RuntimeType = "OSS ArgoCD"
+		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
+		if ossNamespace == "" {
+			var err error
+			ossNamespace, err = k8s.SelectNamespace(RuntimeType)
+			if err != nil {
+				cmd.PrintErrln("Error selecting namespace:", err)
+				return
+			}
+		}
+		cmd.Printf("Gathering data in %s namespace for %s...\n", ossNamespace, RuntimeType)
+
+		K8sResources := append(k8s.K8sGeneral, k8s.K8sArgo...)
+
+		if err := utils.FetchAndSaveData(ossNamespace, K8sResources, dirPath); err != nil {
+			cmd.PrintErrln("Error fetching and saving data:", err)
+			return
+		}
+
+		cmd.Println("Data Gathered Successfully.")
+
+		if err := utils.PreparePackage(strings.ReplaceAll(strings.ToLower(RuntimeType), " ", "-"), dirPath); err != nil {
+			cmd.PrintErrln("Error preparing package:", err)
+			return
+		}
 	},
 }
 
@@ -54,4 +84,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ossCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	ossCmd.Flags().StringVarP(&ossNamespace, "namespace", "n", "", "Specify the namespace")
 }

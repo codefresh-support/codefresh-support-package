@@ -23,9 +23,16 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/codefresh-support/codefresh-support-package/internal/codefresh"
+	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
+	"github.com/codefresh-support/codefresh-support-package/internal/utils"
 	"github.com/spf13/cobra"
 )
+
+var onpremNamespace string
 
 // onpremCmd represents the onprem command
 var onpremCmd = &cobra.Command{
@@ -38,7 +45,84 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("onprem called")
+		const RuntimeType = "Codefresh OnPrem"
+		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
+		cfConfig, err := codefresh.GetCodefreshCreds()
+		if err != nil {
+			cmd.PrintErrln("Error getting Codefresh credentials:", err)
+			return
+		}
+		if cfConfig.BaseURL == "https://g.codefresh.io/api" {
+			cmd.PrintErrln("Cannot gather On-Prem data for Codefresh SaaS. If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.")
+			cmd.PrintErrln("For Codefresh SaaS, use 'pipelines' or 'gitops' commands.")
+			return
+		}
+
+		if onpremNamespace == "" {
+			var err error
+			onpremNamespace, err = k8s.SelectNamespace(RuntimeType)
+			if err != nil {
+				cmd.PrintErrln("Error selecting namespace:", err)
+				return
+			}
+		}
+
+		cmd.Printf("Gathering data in %s namespace for %s...\n", onpremNamespace, RuntimeType)
+
+		K8sResources := append(k8s.K8sGeneral, k8s.K8sClassicOnPrem...)
+
+		if err := utils.FetchAndSaveData(onpremNamespace, K8sResources, dirPath); err != nil {
+			cmd.PrintErrln("Error fetching and saving data:", err)
+			return
+		}
+
+		onpremAccounts, err := codefresh.OnPremAccounts(cfConfig)
+		if err != nil {
+			cmd.PrintErrln("Error fetching On-Prem accounts:", err)
+			return
+		}
+		if err := utils.WriteYaml(onpremAccounts, "onprem-accounts", dirPath); err != nil {
+			cmd.PrintErrln("Error writing On-Prem accounts:", err)
+			return
+		}
+
+		onpremRuntimes, err := codefresh.OnPremRuntimes(cfConfig)
+		if err != nil {
+			cmd.PrintErrln("Error fetching On-Prem runtimes:", err)
+			return
+		}
+		if err := utils.WriteYaml(onpremRuntimes, "onprem-runtimes", dirPath); err != nil {
+			cmd.PrintErrln("Error writing On-Prem runtimes:", err)
+			return
+		}
+
+		onpremUsers, err := codefresh.OnPremUsers(cfConfig)
+		if err != nil {
+			cmd.PrintErrln("Error fetching On-Prem users:", err)
+			return
+		}
+		if err := utils.WriteYaml(onpremUsers, "onprem-users", dirPath); err != nil {
+			cmd.PrintErrln("Error writing On-Prem users:", err)
+			return
+		}
+
+		onpremFeatureFlags, err := codefresh.OnPremFeatureFlags(cfConfig)
+		if err != nil {
+			cmd.PrintErrln("Error fetching On-Prem feature flags:", err)
+			return
+		}
+		if err := utils.WriteYaml(onpremFeatureFlags, "onprem-feature-flags", dirPath); err != nil {
+			cmd.PrintErrln("Error writing On-Prem feature flags:", err)
+			return
+		}
+
+		cmd.Println("Data Gathered Successfully.")
+
+		if err := utils.PreparePackage(strings.ReplaceAll(strings.ToLower(RuntimeType), " ", "-"), dirPath); err != nil {
+			cmd.PrintErrln("Error preparing package:", err)
+			return
+		}
+
 	},
 }
 
@@ -54,4 +138,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// onpremCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	onpremCmd.Flags().StringVarP(&onpremNamespace, "namespace", "n", "", "Specify the namespace")
 }

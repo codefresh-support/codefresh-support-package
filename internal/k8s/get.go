@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 type K8sResources struct {
-	ResourceList string
-	ResourceJSON map[string]interface{}
+	List string
+	JSON map[string]interface{}
 }
 
 func Get(k8sType, namespace, labelSelector string) (*K8sResources, error) {
-	cmdList := exec.Command("kubectl", "get", k8sType, "-n", namespace, "-l", labelSelector)
+	cmdList := exec.Command("kubectl", "get", strings.ToLower(k8sType), "-n", namespace, "-l", labelSelector)
 	var outList bytes.Buffer
 	var stderrList bytes.Buffer
 	cmdList.Stdout = &outList
@@ -23,7 +24,7 @@ func Get(k8sType, namespace, labelSelector string) (*K8sResources, error) {
 		return nil, fmt.Errorf("error getting %s resources: %v: %s", k8sType, err, stderrList.String())
 	}
 
-	cmdJSON := exec.Command("kubectl", "get", k8sType, "-n", namespace, "-l", labelSelector, "-o", "json")
+	cmdJSON := exec.Command("kubectl", "get", strings.ToLower(k8sType), "-n", namespace, "-l", labelSelector, "-o", "json")
 	var outJSON bytes.Buffer
 	var stderrJSON bytes.Buffer
 	cmdJSON.Stdout = &outJSON
@@ -39,7 +40,7 @@ func Get(k8sType, namespace, labelSelector string) (*K8sResources, error) {
 	}
 
 	return &K8sResources{
-		ResourceList: outList.String(),
-		ResourceJSON: resourceJSON,
+		List: outList.String(),
+		JSON: resourceJSON,
 	}, nil
 }
