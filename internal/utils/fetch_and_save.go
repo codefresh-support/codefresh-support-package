@@ -9,9 +9,7 @@ import (
 	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
 )
 
-var Version string
-
-func FetchAndSaveData(namespace string, k8sResources []string, dirPath string) error {
+func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version string) error {
 	for _, k8sType := range k8sResources {
 		err := os.MkdirAll(filepath.Join(dirPath, k8sType), os.ModePerm)
 		if err != nil {
@@ -106,7 +104,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath string) e
 		return fmt.Errorf("error writing events file: %v", err)
 	}
 
-	err = os.WriteFile(filepath.Join(dirPath, "cf-support-version.txt"), []byte(Version), os.ModePerm)
+	err = os.WriteFile(filepath.Join(dirPath, "cf-support-version.txt"), []byte(version), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("error writing version file: %v", err)
 	}

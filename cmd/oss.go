@@ -53,7 +53,7 @@ var ossCmd = &cobra.Command{
 
 		K8sResources := append(k8s.K8sGeneral, k8s.K8sArgo...)
 
-		if err := utils.FetchAndSaveData(ossNamespace, K8sResources, dirPath); err != nil {
+		if err := utils.FetchAndSaveData(ossNamespace, K8sResources, dirPath, Version); err != nil {
 			cmd.PrintErrln("Error fetching and saving data:", err)
 			return
 		}

@@ -66,7 +66,7 @@ var onpremCmd = &cobra.Command{
 
 		K8sResources := append(k8s.K8sGeneral, k8s.K8sClassicOnPrem...)
 
-		if err := utils.FetchAndSaveData(onpremNamespace, K8sResources, dirPath); err != nil {
+		if err := utils.FetchAndSaveData(onpremNamespace, K8sResources, dirPath, Version); err != nil {
 			cmd.PrintErrln("Error fetching and saving data:", err)
 			return
 		}

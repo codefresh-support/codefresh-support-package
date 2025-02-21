@@ -1,0 +1,28 @@
+project_name: cf-support
+builds:
+  - id: default
+    main: ./main.go
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - "-s -w -X github.com/codefresh-support/codefresh-support-package/cmd.Version={{.Version}}"
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip # Use zip format for Windows builds
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: codefresh-support
+    name: codefresh-support-package
