@@ -37,13 +37,8 @@ var onpremNamespace string
 // onpremCmd represents the onprem command
 var onpremCmd = &cobra.Command{
 	Use:   "onprem",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Collect data for the Codefresh OnPrem Installation",
+	Long:  `Collect data for the Codefresh OnPrem Installation`,
 	Run: func(cmd *cobra.Command, args []string) {
 		const RuntimeType = "Codefresh OnPrem"
 		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
@@ -138,5 +133,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// onpremCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	onpremCmd.Flags().StringVarP(&onpremNamespace, "namespace", "n", "", "Specify the namespace")
+	onpremCmd.Flags().StringVarP(&onpremNamespace, "namespace", "n", "", "The namespace where Codefresh OnPrem is installed")
 }

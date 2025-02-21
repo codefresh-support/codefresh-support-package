@@ -37,10 +37,7 @@ var gitOpsNamespace string
 var gitopsCmd = &cobra.Command{
 	Use:   "gitops",
 	Short: "Collect data for the Codefresh GitOps Runtime",
-	Long: `Collect data for the Codefresh GitOps Runtime
-
-Example:
-`,
+	Long:  `Collect data for the Codefresh GitOps Runtime`,
 	Run: func(cmd *cobra.Command, args []string) {
 		const RuntimeType = "Codefresh GitOps Runtime"
 		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
@@ -82,6 +79,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// gitopsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	gitopsCmd.Flags().StringVarP(&gitOpsNamespace, "namespace", "n", "", "Specify the namespace")
+	gitopsCmd.Flags().StringVarP(&gitOpsNamespace, "namespace", "n", "", "The namespace where the Runtime is installed")
 
 }
