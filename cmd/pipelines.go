@@ -57,11 +57,14 @@ var pipelinesCmd = &cobra.Command{
 
 		if len(runtimes) != 0 {
 			var selection int
+			for index, runtime := range runtimes {
+				cmd.Printf("%d. %s\n", index+1, runtime["metadata"].(map[string]interface{})["name"])
+			}
 			for {
-				cmd.Println("Please select the runtime to gather data from (Number):")
+				cmd.Print("\nPlease select the runtime to gather data from (Number): ")
 				_, err := fmt.Scanf("%d", &selection)
 				if err != nil || selection < 1 || selection > len(runtimes) {
-					cmd.Println("Invalid selection. Please enter a number corresponding to one of the listed runtimes.")
+					cmd.PrintErrln("Invalid selection. Please enter a number corresponding to one of the listed runtimes.")
 					continue
 				}
 				break
