@@ -27,7 +27,7 @@ type Config struct {
 
 func GetCodefreshCreds() (*CodefreshConfig, error) {
 	envToken := os.Getenv("CF_API_KEY")
-	envUrl := os.Getenv("CF_BASE_URL")
+	envUrl := os.Getenv("CF_URL")
 
 	if envToken != "" && envUrl != "" {
 		return &CodefreshConfig{
