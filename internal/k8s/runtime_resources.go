@@ -32,6 +32,7 @@ var K8sArgo = []string{
 	"AnalysisTemplates",
 	"Applications",
 	"ApplicationSets",
+	"AppProjects",
 	"EventBus",
 	"EventSources",
 	"Experiments",
