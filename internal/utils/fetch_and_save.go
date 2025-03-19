@@ -9,9 +9,21 @@ import (
 	"github.com/codefresh-support/codefresh-support-package/internal/k8s"
 )
 
+func extractKind(crdName string) string {
+	parts := strings.Split(crdName, ".")
+	if len(parts) < 2 {
+		return crdName
+	}
+
+	kind := parts[0]
+	return kind
+}
+
 func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version string) error {
 	for _, k8sType := range k8sResources {
-		err := os.MkdirAll(filepath.Join(dirPath, k8sType), os.ModePerm)
+		kind := extractKind(k8sType)
+		kindDir := filepath.Join(dirPath, kind)
+		err := os.MkdirAll(kindDir, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("error creating directory: %v", err)
 		}
@@ -29,7 +41,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 			continue
 		}
 
-		err = os.WriteFile(filepath.Join(dirPath, k8sType, fmt.Sprintf("_%sList.txt", k8sType)), []byte(k8sResources.List), os.ModePerm)
+		err = os.WriteFile(filepath.Join(kindDir, fmt.Sprintf("_%sList.txt", kind)), []byte(k8sResources.List), os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("error writing resource list: %v", err)
 		}
@@ -69,7 +81,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 						continue
 					}
 
-					logFileName := filepath.Join(dirPath, k8sType, fmt.Sprintf("%s_%s.log", podName, containerMap["name"].(string)))
+					logFileName := filepath.Join(kindDir, fmt.Sprintf("%s_%s.log", podName, containerMap["name"].(string)))
 					err = os.WriteFile(logFileName, []byte(log), os.ModePerm)
 					if err != nil {
 						return fmt.Errorf("error writing log file: %v", err)
@@ -87,7 +99,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 				continue
 			}
 
-			describeFileName := filepath.Join(dirPath, k8sType, fmt.Sprintf("%s.yaml", resourceName))
+			describeFileName := filepath.Join(kindDir, fmt.Sprintf("%s.yaml", resourceName))
 			err = os.WriteFile(describeFileName, []byte(describeOutput), os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("error writing describe file: %v", err)
