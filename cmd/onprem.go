@@ -47,7 +47,8 @@ var onpremCmd = &cobra.Command{
 			cmd.PrintErrln("Error getting Codefresh credentials:", err)
 			cfConfig = nil
 		}
-		if cfConfig.BaseURL == "https://g.codefresh.io/api" {
+
+		if cfConfig != nil && cfConfig.BaseURL == "https://g.codefresh.io/api" {
 			cmd.PrintErrln("Cannot gather On-Prem data for Codefresh SaaS. If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.")
 			cmd.PrintErrln("For Codefresh SaaS, use 'pipelines' or 'gitops' commands.")
 			return
