@@ -19,7 +19,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 		fmt.Printf("Gathering %s data...\n", k8sType)
 
 		labelSelector := ""
-		if k8sType == "PersistentVolumeClaims" || k8sType == "PersistentVolumes" {
+		if k8sType == "persistentvolumeclaims" || k8sType == "persistentvolumes" {
 			labelSelector = "io.codefresh.accountName"
 		}
 
@@ -34,7 +34,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 			return fmt.Errorf("error writing resource list: %v", err)
 		}
 
-		if k8sType == "PersistentVolumeClaims" || k8sType == "PersistentVolumes" {
+		if k8sType == "persistentvolumeclaims" || k8sType == "persistentvolumes" {
 			items, ok := k8sResources.JSON["items"].([]interface{})
 			if ok && len(items) != 0 {
 				// Convert items to []map[string]interface{}
@@ -55,7 +55,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 			continue
 		}
 
-		if k8sType == "Pods" {
+		if k8sType == "pods" {
 			for _, resource := range k8sResources.JSON["items"].([]interface{}) {
 				resourceMap := resource.(map[string]interface{})
 				podName := resourceMap["metadata"].(map[string]interface{})["name"].(string)
