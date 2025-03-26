@@ -45,7 +45,7 @@ var onpremCmd = &cobra.Command{
 		cfConfig, err := codefresh.GetCodefreshCreds()
 		if err != nil {
 			cmd.PrintErrln("Error getting Codefresh credentials:", err)
-			return
+			cfConfig = nil
 		}
 		if cfConfig.BaseURL == "https://g.codefresh.io/api" {
 			cmd.PrintErrln("Cannot gather On-Prem data for Codefresh SaaS. If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance.")
@@ -71,44 +71,46 @@ var onpremCmd = &cobra.Command{
 			return
 		}
 
-		onpremAccounts, err := codefresh.OnPremAccounts(cfConfig)
-		if err != nil {
-			cmd.PrintErrln("Error fetching On-Prem accounts:", err)
-			return
-		}
-		if err := utils.WriteYaml(onpremAccounts, "onprem-accounts", dirPath); err != nil {
-			cmd.PrintErrln("Error writing On-Prem accounts:", err)
-			return
-		}
+		if cfConfig != nil {
+			onpremAccounts, err := codefresh.OnPremAccounts(cfConfig)
+			if err != nil {
+				cmd.PrintErrln("Error fetching On-Prem accounts:", err)
+				return
+			}
+			if err := utils.WriteYaml(onpremAccounts, "onprem-accounts", dirPath); err != nil {
+				cmd.PrintErrln("Error writing On-Prem accounts:", err)
+				return
+			}
 
-		onpremRuntimes, err := codefresh.OnPremRuntimes(cfConfig)
-		if err != nil {
-			cmd.PrintErrln("Error fetching On-Prem runtimes:", err)
-			return
-		}
-		if err := utils.WriteYaml(onpremRuntimes, "onprem-runtimes", dirPath); err != nil {
-			cmd.PrintErrln("Error writing On-Prem runtimes:", err)
-			return
-		}
+			onpremRuntimes, err := codefresh.OnPremRuntimes(cfConfig)
+			if err != nil {
+				cmd.PrintErrln("Error fetching On-Prem runtimes:", err)
+				return
+			}
+			if err := utils.WriteYaml(onpremRuntimes, "onprem-runtimes", dirPath); err != nil {
+				cmd.PrintErrln("Error writing On-Prem runtimes:", err)
+				return
+			}
 
-		onpremUsers, err := codefresh.OnPremUsers(cfConfig)
-		if err != nil {
-			cmd.PrintErrln("Error fetching On-Prem users:", err)
-			return
-		}
-		if err := utils.WriteYaml(onpremUsers, "onprem-users", dirPath); err != nil {
-			cmd.PrintErrln("Error writing On-Prem users:", err)
-			return
-		}
+			onpremUsers, err := codefresh.OnPremUsers(cfConfig)
+			if err != nil {
+				cmd.PrintErrln("Error fetching On-Prem users:", err)
+				return
+			}
+			if err := utils.WriteYaml(onpremUsers, "onprem-users", dirPath); err != nil {
+				cmd.PrintErrln("Error writing On-Prem users:", err)
+				return
+			}
 
-		onpremFeatureFlags, err := codefresh.OnPremFeatureFlags(cfConfig)
-		if err != nil {
-			cmd.PrintErrln("Error fetching On-Prem feature flags:", err)
-			return
-		}
-		if err := utils.WriteYaml(onpremFeatureFlags, "onprem-feature-flags", dirPath); err != nil {
-			cmd.PrintErrln("Error writing On-Prem feature flags:", err)
-			return
+			onpremFeatureFlags, err := codefresh.OnPremFeatureFlags(cfConfig)
+			if err != nil {
+				cmd.PrintErrln("Error fetching On-Prem feature flags:", err)
+				return
+			}
+			if err := utils.WriteYaml(onpremFeatureFlags, "onprem-feature-flags", dirPath); err != nil {
+				cmd.PrintErrln("Error writing On-Prem feature flags:", err)
+				return
+			}
 		}
 
 		cmd.Println("Data Gathered Successfully.")
