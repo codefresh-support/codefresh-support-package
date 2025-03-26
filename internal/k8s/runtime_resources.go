@@ -1,22 +1,22 @@
 package k8s
 
 var K8sGeneral = []string{
-	"Configmaps",
-	"DaemonSets",
-	"Deployments",
-	"Jobs",
-	"Nodes",
-	"Pods",
-	"ServiceAccounts",
-	"Services",
-	"StatefulSets",
+	"configmaps",
+	"daemonsets.apps",
+	"deployments.apps",
+	"jobs.batch",
+	"nodes",
+	"pods",
+	"serviceaccounts",
+	"services",
+	"statefulsets.apps",
 }
 
 var K8sClassicOnPrem = []string{
-	"CronJobs",
-	"PersistentVolumeClaims",
-	"PersistentVolumes",
-	"Storageclass",
+	"cronjobs.batch",
+	"persistentvolumeclaims",
+	"persistentvolumes",
+	"storageclasses.storage.k8s.io",
 }
 
 var K8sGitOps = []string{
