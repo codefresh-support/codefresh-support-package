@@ -56,6 +56,10 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 		}
 
 		if k8sType == "pods" {
+			err := os.MkdirAll(filepath.Join(dirPath, "logs"), os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("error creating directory: %v", err)
+			}
 			for _, resource := range k8sResources.JSON["items"].([]interface{}) {
 				resourceMap := resource.(map[string]interface{})
 				podName := resourceMap["metadata"].(map[string]interface{})["name"].(string)
@@ -69,7 +73,7 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 						continue
 					}
 
-					logFileName := filepath.Join(dirPath, k8sType, fmt.Sprintf("%s_%s.log", podName, containerMap["name"].(string)))
+					logFileName := filepath.Join(dirPath, "logs", fmt.Sprintf("%s_%s.log", podName, containerMap["name"].(string)))
 					err = os.WriteFile(logFileName, []byte(log), os.ModePerm)
 					if err != nil {
 						return fmt.Errorf("error writing log file: %v", err)
