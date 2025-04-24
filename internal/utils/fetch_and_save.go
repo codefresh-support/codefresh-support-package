@@ -34,6 +34,11 @@ func FetchAndSaveData(namespace string, k8sResources []string, dirPath, version 
 			return fmt.Errorf("error writing resource list: %v", err)
 		}
 
+		if k8sType == "applications.argoproj.io" || k8sType == "applicationsets.argoproj.io" {
+			continue
+		}
+
+
 		if k8sType == "persistentvolumeclaims" || k8sType == "persistentvolumes" {
 			items, ok := k8sResources.JSON["items"].([]interface{})
 			if ok && len(items) != 0 {
