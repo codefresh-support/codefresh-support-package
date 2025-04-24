@@ -1,13 +1,16 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "image": "cr.microsoft.com/vscode/devcontainers/python:3.13",
   "customizations": {
     "vscode": {
       "extensions": [
         "davidanson.vscode-markdownlint",
         "redhat.vscode-yaml",
-        "golang.go"
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "ms-python.black-formatter"
       ]
     }
   }
