@@ -11,7 +11,13 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "ms-python.black-formatter"
-      ]
+      ],
+      "settings": {
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.formatOnSave": true
+        }
+      }
     }
   }
 }
