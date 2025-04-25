@@ -3,9 +3,16 @@ from logic.k8s import select_namespace
 from utils import resource_list, files
 import time
 import logging
+import argparse
 
 
-def onprem(args):
+def setup_parser(parser):
+    parser.add_argument(
+        "-n", "--namespace", help="The namespace where Codefresh On-Prem is installed"
+    )
+
+
+def execute(args):
     runtime_type = "onprem"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
 
@@ -22,9 +29,7 @@ def onprem(args):
         args.namespace = select_namespace()
 
     logging.info(f"Gathering data in the {args.namespace} namespace")
-
     k8s_resources = resource_list.k8s_general + resource_list.k8s_classic
-
     core.gather_data(args.namespace, k8s_resources, dir_path)
 
     if cf_config.get("base_url") != None:
@@ -40,5 +45,13 @@ def onprem(args):
         features = codefresh.get_onprem_feature_flags(cf_config)
         files.save_file(files.to_yaml(features), "onprem_features.yaml", dir_path)
 
-    files.compress_dir(dir_path)
     logging.info("Gathering data completed")
+    files.compress_dir(dir_path)
+
+
+if __name__ == "__main__":
+    # Example of how you might test the command directly
+    parser = argparse.ArgumentParser(description=__doc__)
+    setup_parser(parser)
+    args = parser.parse_args()
+    execute(args)

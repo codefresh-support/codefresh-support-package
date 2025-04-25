@@ -4,11 +4,16 @@ from utils import resource_list, files
 import time
 import logging
 
+# import argparse
 
-def pipelines(args):
+
+def setup_parser(parser):
+    pass
+
+
+def execute(args):
     runtime_type = "pipelines"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
-
     cf_config = codefresh.get_creds()
     runtimes = codefresh.get_saas_runtimes(cf_config)
 
@@ -35,13 +40,20 @@ def pipelines(args):
         pipelines_namespace = select_namespace(runtime_type)
 
     logging.info(f"Gathering data in {pipelines_namespace} namespace")
-
     k8s_resources = resource_list.k8s_general + resource_list.k8s_classic
     core.gather_data(pipelines_namespace, k8s_resources, dir_path)
 
     if re_spec:
         files.save_file(files.to_yaml(re_spec), "pipelines-runtime-spec.yaml", dir_path)
 
+    logging.info("Data gathered successfully.")
     files.compress_dir(dir_path)
 
-    logging.info("Data gathered successfully.")
+
+if __name__ == "__main__":
+    # Example of how you might test the command directly
+    # parser = argparse.ArgumentParser(description=__doc__)
+    # setup_parser(parser)
+    # args = parser.parse_args()
+    # execute(args)
+    execute(None)

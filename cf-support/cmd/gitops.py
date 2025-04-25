@@ -3,9 +3,16 @@ from logic.k8s import select_namespace
 from utils import resource_list, files
 import time
 import logging
+import argparse
 
 
-def gitops(args):
+def setup_parser(parser):
+    parser.add_argument(
+        "-n", "--namespace", help="The namespace where the gitops runtime is installed"
+    )
+
+
+def execute(args):
     runtime_type = "gitops"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
 
@@ -14,13 +21,17 @@ def gitops(args):
         args.namespace = select_namespace()
 
     logging.info(f"Gathering data in the {args.namespace} namespace")
-
     k8s_resources = (
         resource_list.k8s_general + resource_list.k8s_gitops + resource_list.k8s_oss
     )
-
     core.gather_data(args.namespace, k8s_resources, dir_path)
-
+    logging.info("Gathering data complete")
     files.compress_dir(dir_path)
 
-    logging.info("Gathering data complete")
+
+if __name__ == "__main__":
+    # Example of how you might test the command directly
+    parser = argparse.ArgumentParser(description=__doc__)
+    setup_parser(parser)
+    args = parser.parse_args()
+    execute(args)
