@@ -1,7 +1,6 @@
-from logic.k8s import namespace
-from utils import resource_list
-from utils.prepare_package import prepare_package
-from logic.data.gather import gather
+from logic import core
+from logic.k8s import select_namespace
+from utils import resource_list, files
 import time
 import logging
 
@@ -12,7 +11,7 @@ def gitops(args):
 
     if not args.namespace:
         print(f"Which namespace is the {runtime_type} runtime installed in?")
-        args.namespace = namespace.select_namespace()
+        args.namespace = select_namespace()
 
     logging.info(f"Gathering data in the {args.namespace} namespace")
 
@@ -20,7 +19,8 @@ def gitops(args):
         resource_list.k8s_general + resource_list.k8s_gitops + resource_list.k8s_oss
     )
 
-    gather(args.namespace, k8s_resources, dir_path)
-    prepare_package(dir_path)
+    core.gather_data(args.namespace, k8s_resources, dir_path)
+
+    files.compress_dir(dir_path)
 
     logging.info("Gathering data complete")
