@@ -3,9 +3,6 @@ import logging
 
 
 def make_request(base_url, api_key, endpoint):
-    """
-    Helper function to make a GET request to the Codefresh API.
-    """
     headers = {
         "Authorization": api_key,
     }

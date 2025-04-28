@@ -2,7 +2,6 @@ from logic import codefresh, core
 from logic.k8s import select_namespace
 from utils import resource_list, files
 import time
-import logging
 import argparse
 
 
@@ -19,7 +18,7 @@ def execute(args):
     cf_config = codefresh.get_creds()
 
     if cf_config.get("base_url") == "https://g.codefresh.io/api":
-        logging.error(
+        print(
             "Cannot gather On-Prem data for Codefresh SaaS. If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance."
         )
         return
@@ -28,8 +27,8 @@ def execute(args):
         print(f"Which namespace is Codefresh On-Prem installed in?")
         args.namespace = select_namespace()
 
-    logging.info(f"Gathering data in the {args.namespace} namespace")
-    k8s_resources = resource_list.k8s_general + resource_list.k8s_classic
+    print(f"Gathering data in the {args.namespace} namespace")
+    k8s_resources = {**resource_list.k8s_general, **resource_list.k8s_classic}
     core.gather_data(args.namespace, k8s_resources, dir_path)
 
     if cf_config.get("base_url") != None:
@@ -45,7 +44,7 @@ def execute(args):
         features = codefresh.get_onprem_feature_flags(cf_config)
         files.save_file(files.to_yaml(features), "onprem_features.yaml", dir_path)
 
-    logging.info("Gathering data completed")
+    print("Gathering data completed")
     files.compress_dir(dir_path)
 
 

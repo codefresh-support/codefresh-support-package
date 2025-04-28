@@ -6,9 +6,6 @@ from utils import network
 
 
 def get_creds():
-    """
-    Get Codefresh credentials from environment variables or system-specific locations.
-    """
 
     cf_api_key = os.getenv("CF_API_KEY")
     cf_url = os.getenv("CF_URL")

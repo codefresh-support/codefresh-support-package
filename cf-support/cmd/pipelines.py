@@ -2,7 +2,6 @@ from logic import codefresh, core
 from logic.k8s import select_namespace
 from utils import resource_list, files
 import time
-import logging
 
 # import argparse
 
@@ -29,9 +28,9 @@ def execute(args):
                 if 1 <= selection <= len(runtimes):
                     break
                 else:
-                    logging.error("Invalid selection. Please enter a valid number.")
+                    print("Invalid selection. Please enter a valid number.")
             except ValueError:
-                logging.error("Invalid input. Please enter a valid number.")
+                print("Invalid input. Please enter a valid number.")
 
         re_spec = runtimes[selection - 1]
         pipelines_namespace = re_spec["runtimeScheduler"]["cluster"]["namespace"]
@@ -39,14 +38,14 @@ def execute(args):
         print("No runtimes found in the Codefresh account.")
         pipelines_namespace = select_namespace(runtime_type)
 
-    logging.info(f"Gathering data in {pipelines_namespace} namespace")
-    k8s_resources = resource_list.k8s_general + resource_list.k8s_classic
+    print(f"Gathering data in {pipelines_namespace} namespace")
+    k8s_resources = {**resource_list.k8s_general, **resource_list.k8s_classic}
     core.gather_data(pipelines_namespace, k8s_resources, dir_path)
 
     if re_spec:
         files.save_file(files.to_yaml(re_spec), "pipelines-runtime-spec.yaml", dir_path)
 
-    logging.info("Data gathered successfully.")
+    print("Data gathered successfully.")
     files.compress_dir(dir_path)
 
 

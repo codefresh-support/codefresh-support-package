@@ -1,7 +1,3 @@
-"""
-Prints the current version of the Codfresh Support Package tool
-"""
-
 # import argparse
 
 __version__ = "0.0.0"

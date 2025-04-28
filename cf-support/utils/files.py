@@ -2,6 +2,7 @@ import os
 import logging
 import yaml
 import tarfile
+import shutil
 
 
 def save_file(content, name, file_path):
@@ -35,7 +36,7 @@ def compress_dir(dir_path):
 
     try:
         logging.info(f"Removing temp directory {dir_path}")
-        os.rmdir(dir_path)
+        shutil.rmtree(dir_path)
     except Exception as err:
         logging.error(f"Error removing directory {dir_path}: {err}")
 
