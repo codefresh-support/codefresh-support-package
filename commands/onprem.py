@@ -1,6 +1,5 @@
-from logic import codefresh, core
-from logic.k8s import select_namespace
-from utils import resource_list, files
+from models.onprem import OnPrem
+from utils import files
 import time
 import argparse
 
@@ -15,9 +14,10 @@ def execute(args):
     runtime_type = "onprem"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
 
-    cf_config = codefresh.get_creds()
+    runtime = OnPrem()
+    runtime.set_creds()
 
-    if cf_config.get("base_url") == "https://g.codefresh.io/api":
+    if runtime.base_url == "https://g.codefresh.io/api":
         print(
             "Cannot gather On-Prem data for Codefresh SaaS. If you need to gather data for Codefresh On-Prem, please update your ./cfconfig context (or Envs) to point to an On-Prem instance."
         )
@@ -25,23 +25,25 @@ def execute(args):
 
     if not args.namespace:
         print(f"Which namespace is Codefresh On-Prem installed in?")
-        args.namespace = select_namespace()
+        runtime.select_namespace()
+    else:
+        runtime.namespace = args.namespace
 
-    print(f"Gathering data in the {args.namespace} namespace")
-    k8s_resources = {**resource_list.k8s_general, **resource_list.k8s_classic}
-    core.gather_data(args.namespace, k8s_resources, dir_path)
+    print(f"Gathering data in the {runtime.namespace} namespace")
+    k8s_resources = runtime.get_k8s_resources()
+    files.save_k8s_resources(k8s_resources, dir_path)
 
-    if cf_config.get("base_url") != None:
-        accounts = codefresh.get_onprem_accounts(cf_config)
+    if runtime.base_url != None:
+        accounts = runtime.get_accounts()
         files.save_file(files.to_yaml(accounts), "onprem_accounts.yaml", dir_path)
 
-        runtimes = codefresh.get_onprem_runtimes(cf_config)
+        runtimes = runtime.get_runtimes()
         files.save_file(files.to_yaml(runtimes), "onprem_runtimes.yaml", dir_path)
 
-        total_users = codefresh.get_onprem_total_users(cf_config)
+        total_users = runtime.get_total_users()
         files.save_file(total_users, "onprem_total_users.txt", dir_path)
 
-        features = codefresh.get_onprem_feature_flags(cf_config)
+        features = runtime.get_feature_flags()
         files.save_file(files.to_yaml(features), "onprem_features.yaml", dir_path)
 
     print("Gathering data completed")

@@ -1,6 +1,5 @@
-from utils import resource_list, files
-from logic import core
-from logic.k8s import select_namespace
+from models.oss import Oss
+from utils import files
 import time
 import argparse
 
@@ -14,14 +13,19 @@ def setup_parser(parser):
 def execute(args):
     runtime_type = "oss"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
+    runtime = Oss()
 
     if not args.namespace:
         print(f"Which namespace is the Open Source Argo installed in?")
-        args.namespace = select_namespace()
+        runtime.select_namespace()
+    else:
+        runtime.namespace = args.namespace
 
-    print(f"Gathering data in the {args.namespace} namespace")
-    k8s_resources = {**resource_list.k8s_general, **resource_list.k8s_oss}
-    core.gather_data(args.namespace, k8s_resources, dir_path)
+    print(f"Gathering data in the {runtime.namespace} namespace")
+    k8s_resources = runtime.get_k8s_resources()
+
+    files.save_k8s_resources(k8s_resources, dir_path)
+
     print("Gathering data complete")
     files.compress_dir(dir_path)
 

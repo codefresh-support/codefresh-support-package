@@ -1,5 +1,5 @@
 import argparse
-from cmd import gitops, onprem, oss, pipelines, version
+from commands import gitops, onprem, oss, pipelines, version
 
 
 def main():
