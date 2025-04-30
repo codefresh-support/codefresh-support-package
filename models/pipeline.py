@@ -1,12 +1,42 @@
-from .codefresh import Codefresh
 from .k8s import K8s
 from ..utils import network
+import platform
+import os
+import yaml
 
 
-class Pipeline(Codefresh, K8s):
+class Pipeline(K8s):
     def __init__(self):
         super().__init__()
-        super(K8s, self).__init__()
+        self.base_url = None
+        self.api_key = None
+
+    def set_creds(self):
+
+        cf_api_key = os.getenv("CF_API_KEY")
+        cf_url = os.getenv("CF_URL")
+
+        if cf_api_key and cf_url:
+            self.base_url = f"{cf_url}/api"
+            self.api_key = cf_api_key
+            return
+
+        if platform.system() == "Windows":
+            config_path = os.path.join(os.getenv("USERPROFILE"), ".cfconfig")
+        else:
+            config_path = os.path.join(os.getenv("HOME"), ".cfconfig")
+
+        try:
+            with open(config_path, "r") as config_file:
+                config = yaml.safe_load(config_file)
+                current_context = config["contexts"][config["current-context"]]
+                cf_api_key = current_context["token"]
+                cf_url = current_context["url"]
+
+                self.base_url = f"{cf_url}/api"
+                self.api_key = cf_api_key
+        except Exception as err:
+            print(f"Error reading .cfconfig file: {err}")
 
     def get_runtime_spec(self):
         runtimes = network.make_request(
@@ -39,32 +69,8 @@ class Pipeline(Codefresh, K8s):
             return {"Error": "No runtimes found in the Codefresh account."}
 
     def set_k8s_resources(self):
-        self.k8s_resources = {
-            "configmaps": self.core_v1.list_namespaced_config_map(
-                namespace=self.namespace
-            ).to_dict(),
-            "daemonsets": self.apps_v1.list_namespaced_daemon_set(
-                namespace=self.namespace
-            ).to_dict(),
-            "deployments": self.apps_v1.list_namespaced_deployment(
-                namespace=self.namespace
-            ).to_dict(),
-            "jobs": self.batch_v1.list_namespaced_job(
-                namespace=self.namespace
-            ).to_dict(),
-            "nodes": self.core_v1.list_node().to_dict(),
-            "pods": self.core_v1.list_namespaced_pod(
-                namespace=self.namespace
-            ).to_dict(),
-            "serviceaccounts": self.core_v1.list_namespaced_service_account(
-                namespace=self.namespace
-            ).to_dict(),
-            "services": self.core_v1.list_namespaced_service(
-                namespace=self.namespace
-            ).to_dict(),
-            "statefulsets": self.apps_v1.list_namespaced_stateful_set(
-                namespace=self.namespace
-            ).to_dict(),
+        base_resources = super().get_resources()
+        additonal_resources = {
             "cronjobs": self.batch_v1.list_namespaced_cron_job(
                 namespace=self.namespace
             ).to_dict(),
@@ -74,3 +80,4 @@ class Pipeline(Codefresh, K8s):
             "persistentvolumes": self.core_v1.list_persistent_volume().to_dict(),
             "storageclasses": self.storage_vi.list_storage_class().to_dict(),
         }
+        return {**base_resources, **additonal_resources}

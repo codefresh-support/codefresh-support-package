@@ -45,3 +45,30 @@ class K8s:
                 return crd.spec.versions[0].name
         except client.ApiException as e:
             print(f"Error getting CRD '{name}': {e}")
+
+    def get_k8s_resources(self):
+        return {
+            "configmaps": self.core_v1.list_namespaced_config_map(
+                namespace=self.namespace
+            ).to_dict(),
+            "daemonsets": self.apps_v1.list_namespaced_daemon_set(
+                namespace=self.namespace
+            ).to_dict(),
+            "deployments": self.apps_v1.list_namespaced_deployment(
+                namespace=self.namespace
+            ).to_dict(),
+            "jobs": self.batch_v1.list_namespaced_job(
+                namespace=self.namespace
+            ).to_dict(),
+            "nodes": self.core_v1.list_node().to_dict(),
+            "pods": self.core_v1.list_namespaced_pod(
+                namespace=self.namespace
+            ).to_dict(),
+            "serviceaccounts": self.core_v1.list_namespaced_service_account(
+                namespace=self.namespace
+            ).to_dict(),
+            "services": self.core_v1.list_namespaced_service(namespace=self.namespace),
+            "statefulsets": self.apps_v1.list_namespaced_stateful_set(
+                namespace=self.namespace
+            ).to_dict(),
+        }
