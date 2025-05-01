@@ -1,5 +1,4 @@
 from kubernetes import client, config
-import inspect
 
 
 class K8s:
@@ -55,6 +54,9 @@ class K8s:
                 namespace=self.namespace
             ).to_dict(),
             "deployments": self.apps_v1.list_namespaced_deployment(
+                namespace=self.namespace
+            ).to_dict(),
+            "events": self.core_v1.list_namespaced_event(
                 namespace=self.namespace
             ).to_dict(),
             "jobs": self.batch_v1.list_namespaced_job(
