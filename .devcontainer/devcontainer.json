@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "cr.microsoft.com/vscode/devcontainers/python:3.13",
+  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.13",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -10,7 +10,8 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
-        "ms-python.black-formatter"
+        "ms-python.black-formatter",
+        "-ms-python.autopep8"
       ],
       "settings": {
         "[python]": {
@@ -19,5 +20,6 @@
         }
       }
     }
-  }
+  },
+  "postCreateCommand": "pip install -r requirements.txt"
 }

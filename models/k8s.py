@@ -5,7 +5,7 @@ class K8s:
     def __init__(self):
         config.load_kube_config()
         self.core_v1 = client.CoreV1Api()
-        self.apps_v1 = client.AppsV1Api()
+        # self.apps_v1 = client.AppsV1Api()
         self.batch_v1 = client.BatchV1Api()
         self.storage_vi = client.StorageV1Api()
         self.crds = client.CustomObjectsApi()
@@ -50,12 +50,12 @@ class K8s:
             "configmaps": self.core_v1.list_namespaced_config_map(
                 namespace=self.namespace
             ).to_dict(),
-            "daemonsets": self.apps_v1.list_namespaced_daemon_set(
-                namespace=self.namespace
-            ).to_dict(),
-            "deployments": self.apps_v1.list_namespaced_deployment(
-                namespace=self.namespace
-            ).to_dict(),
+            # "daemonsets": self.apps_v1.list_namespaced_daemon_set(
+            #     namespace=self.namespace
+            # ).to_dict(),
+            # "deployments": self.apps_v1.list_namespaced_deployment(
+            #     namespace=self.namespace
+            # ).to_dict(),
             "events": self.core_v1.list_namespaced_event(
                 namespace=self.namespace
             ).to_dict(),
@@ -66,11 +66,11 @@ class K8s:
             "pods": self.core_v1.list_namespaced_pod(
                 namespace=self.namespace
             ).to_dict(),
-            "serviceaccounts": self.core_v1.list_namespaced_service_account(
-                namespace=self.namespace
-            ).to_dict(),
+            # "serviceaccounts": self.core_v1.list_namespaced_service_account(
+            #     namespace=self.namespace
+            # ).to_dict(),
             "services": self.core_v1.list_namespaced_service(namespace=self.namespace),
-            "statefulsets": self.apps_v1.list_namespaced_stateful_set(
-                namespace=self.namespace
-            ).to_dict(),
+            # "statefulsets": self.apps_v1.list_namespaced_stateful_set(
+            #     namespace=self.namespace
+            # ).to_dict(),
         }
