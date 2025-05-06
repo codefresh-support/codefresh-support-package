@@ -10,7 +10,8 @@ authors = [
     { name = "Codefresh Support (Octopus)", email = "support@codefresh.io" }
 ]
 
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 requires-python = ">=3.13.3"
 
 dependencies = [
@@ -20,6 +21,11 @@ dependencies = [
     "click==8.1.8"
 ]
 
+[project.scripts]
+cf-support = "cf_support.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
