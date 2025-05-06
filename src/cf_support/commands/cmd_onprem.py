@@ -1,5 +1,5 @@
-from models.onprem import OnPrem
-from utils import files
+from ..models.onprem import OnPrem
+from ..utils import files
 import time
 
 

@@ -1,5 +1,5 @@
-from models.pipeline import Pipeline
-from utils import files
+from ..models.pipeline import Pipeline
+from ..utils import files
 import time
 
 

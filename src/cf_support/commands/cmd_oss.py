@@ -1,5 +1,5 @@
-from models.oss import Oss
-from utils import files
+from ..models.oss import Oss
+from ..utils import files
 import time
 
 

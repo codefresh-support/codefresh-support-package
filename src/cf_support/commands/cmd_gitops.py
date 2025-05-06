@@ -1,5 +1,5 @@
-from models.gitops import Gitops
-from utils import files
+from ..models.gitops import Gitops
+from ..utils import files
 import time
 
 
