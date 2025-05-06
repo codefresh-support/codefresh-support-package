@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cf-support"
+dynamic = ["version"]
+description = "A tool for collecting support data for Codefresh."
+authors = [
+    { name = "Codefresh Support (Octopus)", email = "support@codefresh.io" }
+]
+
+license = { text = "MIT" }
+
+dependencies = [
+    "kubernetes==32.0.1",
+    "PyYAML==6.0.2",
+    "requests==2.32.3",
+    "click==8.1.8"
+]
+
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"

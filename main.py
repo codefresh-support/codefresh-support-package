@@ -1,58 +1,52 @@
-import argparse
-from commands import gitops, onprem, oss, pipelines, version
+import click
+from commands import cmd_gitops, cmd_onprem, cmd_oss, cmd_pipelines, cmd_version
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        prog="cf-support", description="Codefresh Support Package"
-    )
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+@click.group()
+def cli():
+    """Codefresh Support Package"""
+    pass
 
-    # gitops
-    gitops_parser = subparsers.add_parser(
-        "gitops", help="Collects Data for the GitOps Runtime"
-    )
-    gitops.setup_parser(gitops_parser)
-    gitops_parser.set_defaults(func=gitops.execute)
 
-    # pipelines
-    pipelines_parser = subparsers.add_parser(
-        "pipelines", help="Collects Data for the Pipelines Runtime"
-    )
-    pipelines.setup_parser(pipelines_parser)
-    pipelines_parser.set_defaults(func=pipelines.execute)
+@cli.command()
+@click.option(
+    "--namespace", "-n", help="The namespace where the gitops runtime is installed"
+)
+def gitops_command(namespace):
+    """Collects Data for the GitOps Runtime"""
+    cmd_gitops.execute(namespace=namespace)
 
-    # onprem
-    onprem_parser = subparsers.add_parser(
-        "onprem", help="Collects Data for the Codefresh On-Prem"
-    )
-    onprem.setup_parser(onprem_parser)
-    onprem_parser.set_defaults(func=onprem.execute)
 
-    # oss
-    oss_parser = subparsers.add_parser(
-        "oss", help="Collects Data for the One Source Argo"
-    )
-    oss.setup_parser(oss_parser)
-    oss_parser.set_defaults(func=oss.execute)
+@cli.command()
+@click.option(
+    "--namespace", "-n", help="The namespace where the pipelines runtime is installed"
+)
+def pipelines_command(namespace):
+    """Collects Data for the Pipelines Runtime"""
+    cmd_pipelines.execute(namespace=namespace)
 
-    # version
-    version_parser = subparsers.add_parser(
-        "version",
-        help="Prints the current version of the Codfresh Support Package tool",
-    )
-    version.setup_parser(version_parser)
-    version_parser.set_defaults(func=version.execute)
 
-    args = parser.parse_args()
+@cli.command()
+@click.option(
+    "--namespace", "-n", help="The namespace where Codefresh On-Prem is installed"
+)
+def onprem_command(namespace):
+    """Collects Data for the Codefresh On-Prem"""
+    cmd_onprem.execute(namespace=namespace)
 
-    if hasattr(args, "func"):
-        args.func(args)
-    elif args.command is None:
-        parser.print_help()
-    else:
-        print(f"Unknown command: {args.command}")
+
+@cli.command()
+@click.option("--namespace", "-n", help="The namespace where ArgoCD is installed")
+def oss_command(namespace):
+    """Collects Data for the Open Source Argo"""
+    cmd_oss.execute(namespace=namespace)
+
+
+@cli.command()
+def version_command():
+    """Prints the current version of the Codefresh Support Package tool"""
+    cmd_version.execute()
 
 
 if __name__ == "__main__":
-    main()
+    cli()

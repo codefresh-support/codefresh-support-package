@@ -1,26 +1,19 @@
 from models.gitops import Gitops
 from utils import files
 import time
-import argparse
 
 
-def setup_parser(parser):
-    parser.add_argument(
-        "-n", "--namespace", help="The namespace where the gitops runtime is installed"
-    )
-
-
-def execute(args):
+def execute(namespace):
 
     runtime_type = "gitops"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
     runtime = Gitops()
 
-    if not args.namespace:
+    if not namespace:
         print(f"Which namespace is the {runtime_type} runtime installed in?")
         runtime.select_namespace()
     else:
-        runtime.namespace = args.namespace
+        runtime.namespace = namespace
 
     print(f"Gathering data in the {runtime.namespace} namespace")
     k8s_resources = runtime.get_k8s_resources()
@@ -29,11 +22,3 @@ def execute(args):
 
     print("Gathering data complete")
     files.compress_dir(dir_path)
-
-
-if __name__ == "__main__":
-    # Example of how you might test the command directly
-    parser = argparse.ArgumentParser(description=__doc__)
-    setup_parser(parser)
-    args = parser.parse_args()
-    execute(args)
