@@ -45,6 +45,26 @@ class K8s:
         except client.ApiException as e:
             print(f"Error getting CRD '{name}': {e}")
 
+    def get_pod_logs(self, pod):
+
+        logs = {}
+        for container in pod["spec"]["containers"]:
+            container_name = container["name"]
+
+            try:
+                log = self.core_v1.read_namespaced_pod_log(
+                    name=pod["metadata"]["name"],
+                    namespace=self.namespace,
+                    container=container_name,
+                )
+                logs[container_name] = log
+            except client.ApiException as e:
+                logs[container_name] = (
+                    f"Error fetching logs for pod '{pod["metadata"]["name"]}': {e}"
+                )
+
+        return logs
+
     def get_k8s_resources(self):
         return {
             "configmaps": self.core_v1.list_namespaced_config_map(

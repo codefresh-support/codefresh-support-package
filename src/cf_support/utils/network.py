@@ -1,5 +1,4 @@
 import requests
-import logging
 
 
 def make_request(base_url, api_key, endpoint):
@@ -12,5 +11,5 @@ def make_request(base_url, api_key, endpoint):
     if response.status_code == 200:
         return response.json()
     else:
-        logging.error(f"Error: {response.status_code} - {response.text}")
+        print(f"Error: {response.status_code} - {response.text}")
         return response.text
