@@ -69,20 +69,35 @@ class K8s:
         return logs
 
     def get_k8s_resources(self):
+        pods = self.core_v1.list_namespaced_pod(namespace=self.namespace).to_dict()[
+            "items"
+        ]
+        events = sorted(
+            self.core_v1.list_namespaced_event(namespace=self.namespace).to_dict()[
+                "items"
+            ],
+            key=lambda event: event["metadata"]["creation_timestamp"],
+        )
+
+        for pod in pods:
+            pod_name = pod["metadata"]["name"]
+            pod_events = [
+                event
+                for event in events
+                if event["involved_object"]["name"] == pod_name
+            ]
+            pod["events"] = pod_events
+
         return {
             "configmaps": self.core_v1.list_namespaced_config_map(
                 namespace=self.namespace
             ).to_dict()["items"],
-            "events": self.core_v1.list_namespaced_event(
-                namespace=self.namespace
-            ).to_dict()["items"],
+            "events": events,
             "jobs": self.batch_v1.list_namespaced_job(
                 namespace=self.namespace
             ).to_dict()["items"],
             "nodes": self.core_v1.list_node().to_dict()["items"],
-            "pods": self.core_v1.list_namespaced_pod(
-                namespace=self.namespace
-            ).to_dict()["items"],
+            "pods": pods,
             "services": self.core_v1.list_namespaced_service(
                 namespace=self.namespace
             ).to_dict()["items"],
