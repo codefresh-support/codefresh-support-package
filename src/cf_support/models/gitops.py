@@ -6,14 +6,14 @@ class Gitops(Oss):
         super().__init__()
 
     def get_k8s_resources(self):
-        base_resources = super().get_resources()
+        base_resources = super().get_k8s_resources()
         additonal_resources = {
             "products.codefresh.io": self.crds.list_namespaced_custom_object(
                 group="codefresh.io",
                 plural="products",
                 version=self.get_crd_version(group="codefresh.io", plural="products"),
                 namespace=self.namespace,
-            ),
+            )["items"],
             "promotionflows.codefresh.io": self.crds.list_namespaced_custom_object(
                 group="codefresh.io",
                 plural="promotionflows",
@@ -21,7 +21,7 @@ class Gitops(Oss):
                     group="codefresh.io", plural="promotionflows"
                 ),
                 namespace=self.namespace,
-            ),
+            )["items"],
             "promotionpolicies.codefresh.io": self.crds.list_namespaced_custom_object(
                 group="codefresh.io",
                 plural="promotionpolicies",
@@ -29,7 +29,7 @@ class Gitops(Oss):
                     group="codefresh.io", plural="promotionpolicies"
                 ),
                 namespace=self.namespace,
-            ),
+            )["items"],
             "promotiontemplates.codefresh.io": self.crds.list_namespaced_custom_object(
                 group="codefresh.io",
                 plural="promotiontemplates",
@@ -37,7 +37,7 @@ class Gitops(Oss):
                     group="codefresh.io", plural="promotiontemplates"
                 ),
                 namespace=self.namespace,
-            ),
+            )["items"],
             "restrictedgitsources.codefresh.io": self.crds.list_namespaced_custom_object(
                 group="codefresh.io",
                 plural="restrictedgitsources",
@@ -45,6 +45,8 @@ class Gitops(Oss):
                     group="codefresh.io", plural="restrictedgitsources"
                 ),
                 namespace=self.namespace,
-            ),
+            )[
+                "items"
+            ],
         }
         return {**base_resources, **additonal_resources}

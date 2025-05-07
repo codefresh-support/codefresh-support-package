@@ -68,16 +68,20 @@ class Pipeline(K8s):
         else:
             return {"Error": "No runtimes found in the Codefresh account."}
 
-    def set_k8s_resources(self):
-        base_resources = super().get_resources()
+    def get_k8s_resources(self):
+        base_resources = super().get_k8s_resources()
         additonal_resources = {
             "cronjobs": self.batch_v1.list_namespaced_cron_job(
                 namespace=self.namespace
-            ).to_dict(),
+            ).to_dict()["items"],
             "persistentvolumeclaims": self.core_v1.list_namespaced_persistent_volume_claim(
                 namespace=self.namespace
-            ).to_dict(),
-            "persistentvolumes": self.core_v1.list_persistent_volume().to_dict(),
-            "storageclasses": self.storage_vi.list_storage_class().to_dict(),
+            ).to_dict()[
+                "items"
+            ],
+            "persistentvolumes": self.core_v1.list_persistent_volume().to_dict()[
+                "items"
+            ],
+            "storageclasses": self.storage_vi.list_storage_class().to_dict()["items"],
         }
         return {**base_resources, **additonal_resources}
