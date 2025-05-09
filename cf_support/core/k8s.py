@@ -60,50 +60,48 @@ def get_crd_object(group, plural, namespace):
         return None
 
 
-def get_pod_logs(pod):
+def get_pods_with_logs(namespace):
     core_v1 = client.CoreV1Api()
-    logs = {}
+    pods = core_v1.list_namespaced_pod(namespace=namespace).items
 
-    for container in pod["spec"]["containers"]:
-        container_name = container["name"]
+    pods_with_logs = []
+    for pod in pods:
+        pod_dict = pod.to_dict()
+        pod_logs = {}
+        for container in pod_dict["spec"]["containers"]:
+            container_name = container["name"]
+            try:
+                log = core_v1.read_namespaced_pod_log(
+                    name=pod_dict["metadata"]["name"],
+                    namespace=namespace,
+                    container=container_name,
+                )
+                pod_logs[container_name] = log
+            except client.ApiException as e:
+                pod_logs[container_name] = f"Error fetching logs: {e}"
 
-        try:
-            log = core_v1.read_namespaced_pod_log(
-                name=pod["metadata"]["name"],
-                namespace=pod["metadata"]["namespace"],
-                container=container_name,
-            )
-            logs[container_name] = log
-        except client.ApiException as e:
-            logs[container_name] = (
-                f"Error fetching logs for pod '{pod["metadata"]["name"]}': {e}"
-            )
-
-    return logs
+        pods_with_logs.append(
+            {
+                "spec": pod_dict,
+                "logs": pod_logs,
+            }
+        )
+    return pods_with_logs
 
 
 def get_k8s_resources(namespace):
     core_v1 = client.CoreV1Api()
-    batch_v1 = client.BatchV1Api()
     storage_vi = client.StorageV1Api()
 
     return {
-        "pods": core_v1.list_namespaced_pod(namespace=namespace).to_dict()["items"],
+        "pods": get_pods_with_logs(namespace),
         "events": sorted(
-            core_v1.list_namespaced_event(namespace=namespace).to_dict()["items"],
-            key=lambda event: event["metadata"]["creation_timestamp"],
+            core_v1.list_namespaced_event(namespace=namespace).items,
+            key=lambda event: event.metadata.creation_timestamp,
         ),
-        "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).to_dict()[
-            "items"
-        ],
-        "jobs": batch_v1.list_namespaced_job(namespace=namespace).to_dict()["items"],
-        "nodes": core_v1.list_node().to_dict()["items"],
-        "services": core_v1.list_namespaced_service(namespace=namespace).to_dict()[
-            "items"
-        ],
-        "cronjobs": batch_v1.list_namespaced_cron_job(namespace=namespace).to_dict()[
-            "items"
-        ],
+        "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).items,
+        "nodes": core_v1.list_node().items,
+        "services": core_v1.list_namespaced_service(namespace=namespace).items,
         "persistentvolumeclaims": core_v1.list_namespaced_persistent_volume_claim(
             namespace=namespace
         ).to_dict()["items"],

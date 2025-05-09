@@ -21,6 +21,7 @@ def execute(namespace):
 
     print(f"Gathering data in the {namespace} namespace")
     k8s_resources = k8s.get_k8s_resources(namespace)
+
     files.save_k8s_resources(k8s_resources, dir_path)
 
     if cf_creds["base_url"] != None:
