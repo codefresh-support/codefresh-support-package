@@ -4,11 +4,14 @@ from typing import Dict, List, Optional
 
 @dataclass
 class Event:
-    name: str
-    namespace: str
+    creation_timestamp: str
+    type: str
     reason: str
+    name: str
+    kind: str
     message: str
-    timestamp: str
+    source: str
+    count: int
 
 
 @dataclass
@@ -22,8 +25,10 @@ class Pod:
     name: str
     namespace: str
     service_account: str
+    node: str
     labels: Dict[str, str]
     annotations: Dict[str, str]
+    creation_timestamp: str
     status: str
     ip: str
     node_selectors: Dict[str, str]
@@ -40,3 +45,14 @@ class ConfigMap:
     annotations: Dict[str, str]
     data: Dict[str, str]
     binary_data: Optional[Dict[str, str]] = None
+
+
+@dataclass
+class Node:
+    name: str
+    labels: Dict[str, str]
+    annotations: Dict[str, str]
+    creation_timestamp: str
+    ip: str
+    hostname: str
+    system_info: Dict[str, str]
