@@ -5,27 +5,22 @@ import yaml
 
 
 def get_codefresh_creds():
-
     cf_api_key = os.getenv("CF_API_KEY")
     cf_url = os.getenv("CF_URL")
 
     if cf_api_key and cf_url:
         return {"cf_api_key": cf_api_key, "cf_url": f"{cf_url}/api"}
-
     if platform.system() == "Windows":
         config_path = os.path.join(os.getenv("USERPROFILE"), ".cfconfig")
     else:
         config_path = os.path.join(os.getenv("HOME"), ".cfconfig")
-
     try:
         with open(config_path, "r") as config_file:
             config = yaml.safe_load(config_file)
             current_context = config["contexts"][config["current-context"]]
             cf_api_key = current_context["token"]
             cf_url = current_context["url"]
-
             return {"cf_api_key": cf_api_key, "cf_url": f"{cf_url}/api"}
-
     except Exception as err:
         print(f"Error reading .cfconfig file: {err}")
         return {"cf_api_key": None, "cf_url": None}
