@@ -45,18 +45,19 @@ def compress_dir(dir_path):
 def save_k8s_resources(k8s_resources, dir_path):
 
     for type, data in k8s_resources.items():
-        for item in data:
-            item["metadata"].pop("managedFields", None)
-            item["metadata"].pop("managed_fields", None)
-            try:
-                save_file(
-                    to_yaml(item),
-                    f"{item["metadata"]["name"]}.yaml",
-                    f"{dir_path}/{type}",
-                )
-            except Exception as err:
-                save_file(
-                    err,
-                    f"{item["metadata"]["name"]}.yaml",
-                    f"{dir_path}/{type}",
-                )
+        if data:
+            for item in data:
+                item["metadata"].pop("managedFields", None)
+                item["metadata"].pop("managed_fields", None)
+                try:
+                    save_file(
+                        to_yaml(item),
+                        f"{item["metadata"]["name"]}.yaml",
+                        f"{dir_path}/{type}",
+                    )
+                except Exception as err:
+                    save_file(
+                        err,
+                        f"{item["metadata"]["name"]}.yaml",
+                        f"{dir_path}/{type}",
+                    )

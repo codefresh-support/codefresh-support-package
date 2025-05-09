@@ -22,10 +22,10 @@ dependencies = [
 ]
 
 [project.scripts]
-cf-support = "cf_support.cli:cli"
+cf-support = "cli:cli"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["cf_support"]
 
 [tool.setuptools_scm]
 version_scheme = "post-release"

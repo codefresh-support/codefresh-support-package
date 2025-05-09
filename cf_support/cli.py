@@ -1,5 +1,5 @@
 import click
-from . import commands
+from commands import cmd_gitops, cmd_onprem, cmd_oss, cmd_pipelines, cmd_version
 
 
 @click.group()
@@ -14,7 +14,7 @@ def cli():
 )
 def gitops(namespace):
     """Collects Data for the GitOps Runtime"""
-    commands.gitops.execute(namespace=namespace)
+    cmd_gitops.execute(namespace=namespace)
 
 
 @cli.command()
@@ -23,7 +23,7 @@ def gitops(namespace):
 )
 def pipelines(namespace):
     """Collects Data for the Pipelines Runtime"""
-    commands.pipelines.execute(namespace=namespace)
+    cmd_pipelines.execute(namespace=namespace)
 
 
 @cli.command()
@@ -32,20 +32,20 @@ def pipelines(namespace):
 )
 def onprem(namespace):
     """Collects Data for the Codefresh On-Prem"""
-    commands.onprem.execute(namespace=namespace)
+    cmd_onprem.execute(namespace=namespace)
 
 
 @cli.command()
 @click.option("--namespace", "-n", help="The namespace where ArgoCD is installed")
 def oss(namespace):
     """Collects Data for the Open Source Argo"""
-    commands.oss.execute(namespace=namespace)
+    cmd_oss.execute(namespace=namespace)
 
 
 @cli.command()
 def version():
     """Prints the current version of the Codefresh Support Package tool"""
-    commands.version.execute()
+    cmd_version.execute()
 
 
 if __name__ == "__main__":
