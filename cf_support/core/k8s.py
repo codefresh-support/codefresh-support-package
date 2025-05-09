@@ -1,4 +1,5 @@
 from kubernetes import client, config
+from models.k8s_models import Pod, PodLog
 import urllib3
 
 # removes TLS warnings about unverified HTTPS requests
@@ -96,16 +97,13 @@ def get_k8s_resources(namespace):
     return {
         "pods": get_pods_with_logs(namespace),
         "events": sorted(
-            core_v1.list_namespaced_event(namespace=namespace).items,
-            key=lambda event: event.metadata.creation_timestamp,
+            core_v1.list_namespaced_event(namespace=namespace).to_dict()["items"],
+            key=lambda event: event["metadata"]["creation_timestamp"],
         ),
-        "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).items,
-        "nodes": core_v1.list_node().items,
-        "services": core_v1.list_namespaced_service(namespace=namespace).items,
-        "persistentvolumeclaims": core_v1.list_namespaced_persistent_volume_claim(
-            namespace=namespace
-        ).to_dict()["items"],
-        "persistentvolumes": core_v1.list_persistent_volume().to_dict()["items"],
+        "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).to_dict()[
+            "items"
+        ],
+        "nodes": core_v1.list_node().to_dict()["items"],
         "storageclasses": storage_vi.list_storage_class().to_dict()["items"],
         "products.codefresh.io": get_crd_object("codefresh.io", "products", namespace),
         "promotionflows.codefresh.io": get_crd_object(
@@ -120,12 +118,6 @@ def get_k8s_resources(namespace):
         "restrictedgitsources.codefresh.io": get_crd_object(
             "codefresh.io", "restrictedgitsources", namespace
         ),
-        "analysisruns.argoproj.io": get_crd_object(
-            "argoproj.io", "analysisruns", namespace
-        ),
-        "analysistemplates.argoproj.io": get_crd_object(
-            "argoproj.io", "analysistemplates", namespace
-        ),
         "applications.argoproj.io": get_crd_object(
             "argoproj.io", "applications", namespace
         ),
@@ -135,13 +127,5 @@ def get_k8s_resources(namespace):
         "appprojects.argoproj.io": get_crd_object(
             "argoproj.io", "appprojects", namespace
         ),
-        "eventbus.argoproj.io": get_crd_object("argoproj.io", "eventbus", namespace),
-        "eventsources.argoproj.io": get_crd_object(
-            "argoproj.io", "eventsources", namespace
-        ),
-        "experiments.argoproj.io": get_crd_object(
-            "argoproj.io", "experiments", namespace
-        ),
         "rollouts.argoproj.io": get_crd_object("argoproj.io", "rollouts", namespace),
-        "sensors.argoproj.io": get_crd_object("argoproj.io", "sensors", namespace),
     }

@@ -1,5 +1,5 @@
 from core import codefresh, k8s
-from utils import files
+from utils import files, version
 import time
 
 
@@ -23,6 +23,7 @@ def execute(namespace):
     k8s_resources = k8s.get_k8s_resources(namespace)
 
     files.save_k8s_resources(k8s_resources, dir_path)
+    files.save_file(version.get_version(), "package_version.txt", dir_path)
 
     if cf_creds["base_url"] != None:
         accounts = codefresh.get_system_accounts(cf_creds)
