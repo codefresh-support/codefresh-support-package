@@ -127,5 +127,4 @@ def get_k8s_resources(namespace):
         "appprojects.argoproj.io": get_crd_object(
             "argoproj.io", "appprojects", namespace
         ),
-        "rollouts.argoproj.io": get_crd_object("argoproj.io", "rollouts", namespace),
     }

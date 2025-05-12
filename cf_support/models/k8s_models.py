@@ -56,3 +56,12 @@ class Node:
     ip: str
     hostname: str
     system_info: Dict[str, str]
+
+
+@dataclass
+class StorageClass:
+    name: str
+    parameters: Dict[str, str]
+    provisioner: str
+    reclaim_policy: str
+    volume_binding_mode: str
