@@ -1,6 +1,6 @@
 # Codefresh Support Package
 
-This project is designed to gather data from Codefresh Hybrid Runtimes OnPrem isntallation, and Open Source ArgoCD. It collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events. For Pipelines and OnPrem we gather some informtion from the platform itself.
+This project is designed to gather data from Codefresh Hybrid Runtimes OnPrem installation, and Open Source ArgoCD. It collects information about various Kubernetes resources such as Pods, Nodes, Configmaps, Services, and Events. For Pipelines and OnPrem we gather some informtion from the platform itself.
 
 ## Prereqs
 
