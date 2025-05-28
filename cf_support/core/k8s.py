@@ -4,12 +4,12 @@ import urllib3
 
 # removes TLS warnings about unverified HTTPS requests
 urllib3.disable_warnings()
+
 # loads the kubenetes config
 config.load_kube_config()
 
 
 def select_namespace():
-
     core_v1 = client.CoreV1Api()
     namespaces = core_v1.list_namespace()
     namespace_list = [ns.metadata.name for ns in namespaces.items]
@@ -51,6 +51,8 @@ def get_crd_object(group, plural, namespace):
     crds = client.CustomObjectsApi()
     try:
         version = get_crd_version(group=group, plural=plural)
+        if version == None:
+            return None
         return crds.list_namespaced_custom_object(
             group=group,
             plural=plural,
@@ -91,20 +93,52 @@ def get_pods_with_logs(namespace):
 
 
 def get_k8s_resources(namespace):
+    apps_v1 = client.AppsV1Api()
     core_v1 = client.CoreV1Api()
+    batch_v1 = client.BatchV1Api()
     storage_vi = client.StorageV1Api()
 
     return {
         "pods": get_pods_with_logs(namespace),
-        "events": sorted(
+        "events.events.k8s.io": sorted(
             core_v1.list_namespaced_event(namespace=namespace).to_dict()["items"],
             key=lambda event: event["metadata"]["creation_timestamp"],
         ),
         "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).to_dict()[
             "items"
         ],
+        "cronjobs.batch": batch_v1.list_namespaced_cron_job(
+            namespace=namespace
+        ).to_dict()["items"],
+        "daemonsets.apps": apps_v1.list_namespaced_daemon_set(
+            namespace=namespace
+        ).to_dict()["items"],
+        "deployments.apps": apps_v1.list_namespaced_deployment(
+            namespace=namespace
+        ).to_dict()["items"],
+        "jobs.batch": batch_v1.list_namespaced_job(namespace=namespace).to_dict()[
+            "items"
+        ],
         "nodes": core_v1.list_node().to_dict()["items"],
-        "storageclasses": storage_vi.list_storage_class().to_dict()["items"],
+        "persistentvolumeclaims": core_v1.list_namespaced_persistent_volume_claim(
+            namespace=namespace
+        ).to_dict()["items"],
+        "persistentvolumes": core_v1.list_persistent_volume().to_dict()["items"],
+        "replicasets.apps": apps_v1.list_namespaced_replica_set(
+            namespace=namespace
+        ).to_dict()["items"],
+        "serviceaccounts": core_v1.list_namespaced_service_account(
+            namespace=namespace
+        ).to_dict()["items"],
+        "services": core_v1.list_namespaced_service(namespace=namespace).to_dict()[
+            "items"
+        ],
+        "statefulsets.apps": apps_v1.list_namespaced_stateful_set(
+            namespace=namespace
+        ).to_dict()["items"],
+        "storageclasses.storage.k8s.io": storage_vi.list_storage_class().to_dict()[
+            "items"
+        ],
         "products.codefresh.io": get_crd_object("codefresh.io", "products", namespace),
         "promotionflows.codefresh.io": get_crd_object(
             "codefresh.io", "promotionflows", namespace
@@ -118,6 +152,12 @@ def get_k8s_resources(namespace):
         "restrictedgitsources.codefresh.io": get_crd_object(
             "codefresh.io", "restrictedgitsources", namespace
         ),
+        "analysisruns.argoproj.io": get_crd_object(
+            "argoproj.io", "analysisruns", namespace
+        ),
+        "analysistemplates.argoproj.io": get_crd_object(
+            "argoproj.io", "analysistemplates", namespace
+        ),
         "applications.argoproj.io": get_crd_object(
             "argoproj.io", "applications", namespace
         ),
@@ -127,4 +167,13 @@ def get_k8s_resources(namespace):
         "appprojects.argoproj.io": get_crd_object(
             "argoproj.io", "appprojects", namespace
         ),
+        "eventbus.argoproj.io": get_crd_object("argoproj.io", "eventbus", namespace),
+        "eventsources.argoproj.io": get_crd_object(
+            "argoproj.io", "eventsources", namespace
+        ),
+        "experiments.argoproj.io": get_crd_object(
+            "argoproj.io", "experiments", namespace
+        ),
+        "rollouts.argoproj.io": get_crd_object("argoproj.io", "rollouts", namespace),
+        "sensors.argoproj.io": get_crd_object("argoproj.io", "sensors", namespace),
     }

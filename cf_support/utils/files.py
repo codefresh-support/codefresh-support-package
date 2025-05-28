@@ -48,21 +48,22 @@ def save_k8s_resources(k8s_resources, dir_path):
         if k8s_type == "pods":
             for pods in data:
                 save_pod_logs(
-                    pods["logs"], f"{dir_path}/logs/{pods["spec"]["metadata"]["name"]}"
+                    pods["logs"],
+                    f"{dir_path}/{k8s_type}/{pods["spec"]["metadata"]["name"]}",
                 )
                 pods["spec"]["metadata"].pop("managedFields", None)
                 pods["spec"]["metadata"].pop("managed_fields", None)
                 save_file(
                     to_yaml(pods["spec"]),
                     f"{pods["spec"]["metadata"]["name"]}.yaml",
-                    f"{dir_path}/{k8s_type}",
+                    f"{dir_path}/{k8s_type}/{pods["spec"]["metadata"]["name"]}",
                 )
             continue
 
         if data:
             for item in data:
-                item["metadata"].pop("managedFields", None)
                 item["metadata"].pop("managed_fields", None)
+                item["metadata"].pop("managedFields", None)
                 save_file(
                     to_yaml(item),
                     f"{item["metadata"]["name"]}.yaml",
