@@ -60,7 +60,7 @@ def save_k8s_resources(k8s_resources, dir_path):
                     )
                     save_file(
                         pods["events"],
-                        "events.txt",
+                        "events.log",
                         f"{dir_path}/{k8s_type}/{pods["pod"]["metadata"]["name"]}",
                     )
 
@@ -68,9 +68,10 @@ def save_k8s_resources(k8s_resources, dir_path):
 
             if k8s_type == "events.events.k8s.io":
                 event_messages = "\n".join(
-                    f"{event.creation_timespamp} /t{event.type} /t{event.reason} /t{event.name} /t{event.kind} /t{event.message} /t{event.source} /t{event.count}"
+                    f"{event.metadata.creation_timestamp}\t{event.type}\t{event.reason}\t{event.involved_object.kind}/{event.involved_object.name}\t{event.message}"
                     for event in data
                 )
+                event_messages = "Timestamp\tType\tReason\tObject\tMessage\n" + event_messages
 
                 save_file(event_messages, "events.log", dir_path)
 

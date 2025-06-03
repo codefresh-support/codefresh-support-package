@@ -80,9 +80,10 @@ def get_pod_events(events, pod_name):
         and event.involved_object.kind == "Pod"
     ]
     event_messages = "\n".join(
-        f"{event.creation_timespamp} /t{event.type} /t{event.reason} /t{event.name} /t{event.kind} /t{event.message} /t{event.source} /t{event.count}"
+        f"{event.metadata.creation_timestamp}\t{event.type}\t{event.reason}\t{event.involved_object.kind}/{event.involved_object.name}\t{event.message}"
         for event in pod_events
     )
+    event_messages = "Timestamp\tType\tReason\tObject\tMessage\n" + event_messages
     return event_messages
 
 
@@ -99,7 +100,7 @@ def get_pod_data(namespace, events):
             container_name = container["name"]
             try:
                 log = core_v1.read_namespaced_pod_log(
-                    name=container_name,
+                    name=pod["metadata"]["name"],
                     namespace=namespace,
                     container=container_name,
                 )
