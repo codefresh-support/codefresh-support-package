@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 
@@ -33,18 +33,9 @@ class Pod:
     ip: str
     node_selectors: Dict[str, str]
     tolerations: Dict[str, str]
-    events: List[Event] = field(default_factory=list)
-    logs: List[PodLog] = field(default_factory=list)
-
-
-@dataclass
-class ConfigMap:
-    name: str
-    namespace: str
-    labels: Dict[str, str]
-    annotations: Dict[str, str]
-    data: Dict[str, str]
-    binary_data: Optional[Dict[str, str]] = None
+    events: List[Event] 
+    logs: List[PodLog]
+    raw: Dict[str, str]
 
 
 @dataclass
@@ -56,12 +47,4 @@ class Node:
     ip: str
     hostname: str
     system_info: Dict[str, str]
-
-
-@dataclass
-class StorageClass:
-    name: str
-    parameters: Dict[str, str]
-    provisioner: str
-    reclaim_policy: str
-    volume_binding_mode: str
+    raw: Dict[str, str]

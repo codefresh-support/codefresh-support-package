@@ -26,7 +26,7 @@ def gitops(namespace):
 )
 def pipelines(namespace, runtime):
     """Collects Data for the Pipelines Runtime"""
-    cmd_pipelines.execute(namespace=namespace, runtime=runtime)
+    cmd_pipelines.execute(namespace=namespace, runtime_name=runtime)
 
 
 @cli.command()
@@ -47,7 +47,7 @@ def oss(namespace):
 
 @cli.command()
 def version():
-    """Prints the current version of the Codefresh Support Package tool"""
+    """Prints the current version of the Codefresh Support Package"""
     cmd_version.execute()
 
 

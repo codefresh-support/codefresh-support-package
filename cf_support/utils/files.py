@@ -21,7 +21,7 @@ def save_pod_logs(logs, file_path):
 
 def to_yaml(content):
     try:
-        yaml_str = yaml.dump(content, default_flow_style=False)
+        yaml_str = yaml.dump(content, sort_keys=False, default_flow_style=False)
         return yaml_str
     except Exception as err:
         print(f"Error converting to YAML: {err}")
@@ -45,26 +45,11 @@ def compress_dir(dir_path):
 
 def save_k8s_resources(k8s_resources, dir_path):
     for k8s_type, data in k8s_resources.items():
-        if k8s_type == "pods":
-            for pods in data:
-                save_pod_logs(
-                    pods["logs"],
-                    f"{dir_path}/{k8s_type}/{pods["pod"].metatdata.name}",
-                )
-                delattr(pods["pod"].metadata, "managed_fields")
-                save_file(
-                    to_yaml(pods["spec"]),
-                    f"{pods["spec"]["metadata"]["name"]}.yaml",
-                    f"{dir_path}/{k8s_type}/{pods["spec"]["metadata"]["name"]}",
-                )
-            continue
-
         if data:
             for item in data:
-                item["metadata"].pop("managed_fields", None)
-                item["metadata"].pop("managedFields", None)
                 save_file(
-                    to_yaml(item),
-                    f"{item["metadata"]["name"]}.yaml",
-                    f"{dir_path}/{k8s_type}",
+                to_yaml(item),
+                f"{item.name}.yaml",
+                f"{dir_path}/{k8s_type}",
                 )
+                
