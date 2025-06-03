@@ -1,7 +1,11 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
   "name": "Codefresh Support Package",
-  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.13",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -11,6 +15,7 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "ms-python.black-formatter",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
         "-ms-python.autopep8"
       ],
       "settings": {

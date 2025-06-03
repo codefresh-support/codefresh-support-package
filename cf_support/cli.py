@@ -21,9 +21,12 @@ def gitops(namespace):
 @click.option(
     "--namespace", "-n", help="The namespace where the pipelines runtime is installed"
 )
-def pipelines(namespace):
+@click.option(
+    "--runtime", "-re", help="The name of the pipelines runtime"
+)
+def pipelines(namespace, runtime):
     """Collects Data for the Pipelines Runtime"""
-    cmd_pipelines.execute(namespace=namespace)
+    cmd_pipelines.execute(namespace=namespace, runtime=runtime)
 
 
 @cli.command()

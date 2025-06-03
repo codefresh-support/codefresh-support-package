@@ -26,27 +26,30 @@ def get_codefresh_creds():
         return {"cf_api_key": None, "cf_url": None}
 
 
-def select_runtime(runtimes):
-    if len(runtimes) != 0:
-        for index, runtime in enumerate(runtimes, start=1):
-            print(f"{index}. {runtime['metadata']['name']}")
-
-        while True:
-            try:
-                selection = int(
-                    input("\nPlease select the runtime to gather data from (Number): ")
-                )
-                if 1 <= selection <= len(runtimes):
-                    break
-                else:
-                    print("Invalid selection. Please enter a valid number.")
-            except ValueError:
-                print("Invalid input. Please enter a valid number.")
-
-        re_spec = runtimes[selection - 1]
-        return re_spec
-    else:
+def select_runtime(runtimes, runtime_name = None):
+    if not runtimes:
         return None
+    
+    if runtime_name:
+        for runtime in runtimes:
+            if runtime_name == runtime['metadata']['name']:
+                return runtime
+        print(f"Runtime '{runtime_name}' not found.")
+        return None
+    
+    for index, runtime in enumerate(runtimes, start=1):
+        print(f"{index}. {runtime['metadata']['name']}")
+
+    while True:
+        try:
+            selection = int(input("\nPlease select the runtime to gather data from (Number): "))
+            if 1 <= selection <= len(runtimes):
+                return runtimes[selection - 1]
+            else:
+                print("Invalid selection. Please enter a valid number.")
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+        
 
 
 def get_runtime_spec(cf_creds):

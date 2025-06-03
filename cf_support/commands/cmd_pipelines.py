@@ -3,7 +3,7 @@ from utils import files, version
 import time
 
 
-def execute(namespace):
+def execute(namespace, runtime_name):
     runtime_type = "pipelines"
     dir_path = f"cf-support-{runtime_type}-{int(time.time())}"
     cf_creds = codefresh.get_codefresh_creds()
@@ -16,7 +16,11 @@ def execute(namespace):
     k8s_resources = k8s.get_k8s_resources(namespace)
     if cf_creds["base_url"] != None:
         runtimes = codefresh.get_runtime_spec(cf_creds)
-        re_spec = codefresh.select_runtime(runtimes)
+        if not runtime_name:
+            re_spec = codefresh.select_runtime(runtimes)
+        else:
+            re_spec = codefresh.select_runtime(runtimes, runtime_name)
+            
     print("Data gathered successfully.")
 
     print("Saving data")
