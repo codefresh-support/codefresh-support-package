@@ -46,10 +46,39 @@ def compress_dir(dir_path):
 def save_k8s_resources(k8s_resources, dir_path):
     for k8s_type, data in k8s_resources.items():
         if data:
+            if k8s_type == "pods":
+                for pods in data:
+                    save_pod_logs(
+                        pods["logs"],
+                        f"{dir_path}/{k8s_type}/{pods["pod"]["metadata"]["name"]}",
+                    )
+
+                    save_file(
+                        to_yaml(pods["pod"]),
+                        f"{pods["pod"]["metadata"]["name"]}.yaml",
+                        f"{dir_path}/{k8s_type}/{pods["pod"]["metadata"]["name"]}",
+                    )
+                    save_file(
+                        pods["events"],
+                        "events.txt",
+                        f"{dir_path}/{k8s_type}/{pods["pod"]["metadata"]["name"]}",
+                    )
+
+                continue
+
+            if k8s_type == "events.events.k8s.io":
+                event_messages = "\n".join(
+                    f"{event.creation_timespamp} /t{event.type} /t{event.reason} /t{event.name} /t{event.kind} /t{event.message} /t{event.source} /t{event.count}"
+                    for event in data
+                )
+
+                save_file(event_messages, "events.log", dir_path)
+
+                continue
+
             for item in data:
                 save_file(
-                to_yaml(item),
-                f"{item.name}.yaml",
-                f"{dir_path}/{k8s_type}",
+                    to_yaml(item),
+                    f"{item["metadata"]["name"]}.yaml",
+                    f"{dir_path}/{k8s_type}",
                 )
-                

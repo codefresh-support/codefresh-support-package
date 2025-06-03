@@ -29,13 +29,15 @@ def select_namespace():
 
     return namespace_list[selection - 1]
 
+
 def sanitize_data(data):
     if isinstance(data, dict):
         data["metadata"].pop("managedFields", None)
         return data
     else:
         data.metadata.managed_fields = None
-        return data
+        return data.to_dict()
+
 
 def get_crd_version(group, plural):
     apiextensions_v1 = client.ApiextensionsV1Api(client.ApiClient())
@@ -70,19 +72,34 @@ def get_crd_object(group, plural, namespace):
         return None
 
 
+def get_pod_events(events, pod_name):
+    pod_events = [
+        event
+        for event in events
+        if event.involved_object.name == pod_name
+        and event.involved_object.kind == "Pod"
+    ]
+    event_messages = "\n".join(
+        f"{event.creation_timespamp} /t{event.type} /t{event.reason} /t{event.name} /t{event.kind} /t{event.message} /t{event.source} /t{event.count}"
+        for event in pod_events
+    )
+    return event_messages
+
+
 def get_pod_data(namespace, events):
     core_v1 = client.CoreV1Api()
     pods = core_v1.list_namespaced_pod(namespace=namespace).items
 
-    pods_with_logs = []
+    pod_data = []
     for pod in pods:
-        pod_logs = {}
         pod = sanitize_data(pod)
-        for container in pod.spec.containers:
-            container_name = container.name
+        pod_events = get_pod_events(events, pod["metadata"]["name"])
+        pod_logs = {}
+        for container in pod["spec"]["containers"]:
+            container_name = container["name"]
             try:
                 log = core_v1.read_namespaced_pod_log(
-                    name=container_name ,
+                    name=container_name,
                     namespace=namespace,
                     container=container_name,
                 )
@@ -90,14 +107,8 @@ def get_pod_data(namespace, events):
             except client.ApiException as e:
                 pod_logs[container_name] = f"Error fetching logs: {e}"
 
-        pods_with_logs.append(
-            {
-                "pod": pod,
-                "logs": pod_logs,
-                "events": events
-            }
-        )
-    return pods_with_logs
+        pod_data.append({"pod": pod, "logs": pod_logs, "events": pod_events})
+    return pod_data
 
 
 def get_k8s_resources(namespace):
@@ -106,39 +117,82 @@ def get_k8s_resources(namespace):
     batch_v1 = client.BatchV1Api()
     storage_vi = client.StorageV1Api()
 
-    return {
-        "events.events.k8s.io": sorted(
-            core_v1.list_namespaced_event(namespace=namespace).items,
-            key=lambda event: event.metadata.creation_timestamp,
+    events = sorted(
+        core_v1.list_namespaced_event(namespace=namespace).items,
+        key=lambda event: event.metadata.creation_timestamp,
+    )
+
+    pods = get_pod_data(namespace, events)
+
+    k8s_resources = {
+        "configmaps": list(
+            map(
+                sanitize_data,
+                core_v1.list_namespaced_config_map(namespace=namespace).items,
+            )
         ),
-        "pods": get_pod_data(namespace, None),
-        "configmaps": core_v1.list_namespaced_config_map(namespace=namespace).items,
-        "cronjobs.batch": batch_v1.list_namespaced_cron_job(
-            namespace=namespace
-        ).items,
-        "daemonsets.apps": apps_v1.list_namespaced_daemon_set(
-            namespace=namespace
-        ).items,
-        "deployments.apps": apps_v1.list_namespaced_deployment(
-            namespace=namespace
-        ).items,
-        "jobs.batch": batch_v1.list_namespaced_job(namespace=namespace).items,
-        "nodes": core_v1.list_node().items,
-        "persistentvolumeclaims": core_v1.list_namespaced_persistent_volume_claim(
-            namespace=namespace
-        ).items,
-        "persistentvolumes": core_v1.list_persistent_volume().items,
-        "replicasets.apps": apps_v1.list_namespaced_replica_set(
-            namespace=namespace
-        ).items,
-        "serviceaccounts": core_v1.list_namespaced_service_account(
-            namespace=namespace
-        ).items,
-        "services": core_v1.list_namespaced_service(namespace=namespace).items,
-        "statefulsets.apps": apps_v1.list_namespaced_stateful_set(
-            namespace=namespace
-        ).items,
-        "storageclasses.storage.k8s.io": storage_vi.list_storage_class().items,
+        "cronjobs.batch": list(
+            map(
+                sanitize_data,
+                batch_v1.list_namespaced_cron_job(namespace=namespace).items,
+            )
+        ),
+        "daemonsets.apps": list(
+            map(
+                sanitize_data,
+                apps_v1.list_namespaced_daemon_set(namespace=namespace).items,
+            )
+        ),
+        "deployments.apps": list(
+            map(
+                sanitize_data,
+                apps_v1.list_namespaced_deployment(namespace=namespace).items,
+            )
+        ),
+        "events.events.k8s.io": events,
+        "jobs.batch": list(
+            map(sanitize_data, batch_v1.list_namespaced_job(namespace=namespace).items)
+        ),
+        "nodes": list(map(sanitize_data, core_v1.list_node().items)),
+        "persistentvolumeclaims": list(
+            map(
+                sanitize_data,
+                core_v1.list_namespaced_persistent_volume_claim(
+                    namespace=namespace
+                ).items,
+            )
+        ),
+        "persistentvolumes": list(
+            map(sanitize_data, core_v1.list_persistent_volume().items)
+        ),
+        "pods": pods,
+        "replicasets.apps": list(
+            map(
+                sanitize_data,
+                apps_v1.list_namespaced_replica_set(namespace=namespace).items,
+            )
+        ),
+        "serviceaccounts": list(
+            map(
+                sanitize_data,
+                core_v1.list_namespaced_service_account(namespace=namespace).items,
+            )
+        ),
+        "services": list(
+            map(
+                sanitize_data,
+                core_v1.list_namespaced_service(namespace=namespace).items,
+            )
+        ),
+        "statefulsets.apps": list(
+            map(
+                sanitize_data,
+                apps_v1.list_namespaced_stateful_set(namespace=namespace).items,
+            )
+        ),
+        "storageclasses.storage.k8s.io": list(
+            map(sanitize_data, storage_vi.list_storage_class().items)
+        ),
         "products.codefresh.io": get_crd_object("codefresh.io", "products", namespace),
         "promotionflows.codefresh.io": get_crd_object(
             "codefresh.io", "promotionflows", namespace
@@ -177,3 +231,5 @@ def get_k8s_resources(namespace):
         "rollouts.argoproj.io": get_crd_object("argoproj.io", "rollouts", namespace),
         "sensors.argoproj.io": get_crd_object("argoproj.io", "sensors", namespace),
     }
+
+    return k8s_resources

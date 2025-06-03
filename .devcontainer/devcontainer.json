@@ -15,8 +15,7 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "ms-python.black-formatter",
-        "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "-ms-python.autopep8"
+        "ms-kubernetes-tools.vscode-kubernetes-tools"
       ],
       "settings": {
         "[python]": {
