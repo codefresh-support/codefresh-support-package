@@ -49,10 +49,9 @@ def save_k8s_resources(k8s_resources, dir_path):
             for pods in data:
                 save_pod_logs(
                     pods["logs"],
-                    f"{dir_path}/{k8s_type}/{pods["spec"]["metadata"]["name"]}",
+                    f"{dir_path}/{k8s_type}/{pods["pod"].metatdata.name}",
                 )
-                pods["spec"]["metadata"].pop("managedFields", None)
-                pods["spec"]["metadata"].pop("managed_fields", None)
+                delattr(pods["pod"].metadata, "managed_fields")
                 save_file(
                     to_yaml(pods["spec"]),
                     f"{pods["spec"]["metadata"]["name"]}.yaml",
