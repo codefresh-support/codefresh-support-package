@@ -71,7 +71,9 @@ def save_k8s_resources(k8s_resources, dir_path):
                     f"{event.metadata.creation_timestamp}\t{event.type}\t{event.reason}\t{event.involved_object.kind}/{event.involved_object.name}\t{event.message}"
                     for event in data
                 )
-                event_messages = "Timestamp\tType\tReason\tObject\tMessage\n" + event_messages
+                event_messages = (
+                    "Timestamp\tType\tReason\tObject\tMessage\n" + event_messages
+                )
 
                 save_file(event_messages, "events.log", dir_path)
 
