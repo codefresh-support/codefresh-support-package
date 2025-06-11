@@ -1,3 +1,3 @@
 export function onprem(namespace: string) {
-    console.log(namespace)
+  console.log(namespace);
 }
