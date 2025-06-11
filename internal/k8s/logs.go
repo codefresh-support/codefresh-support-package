@@ -7,7 +7,7 @@ import (
 )
 
 func Logs(namespace, podName, containerName string) (string, error) {
-	cmd := exec.Command("kubectl", "logs", "-n", namespace, podName, "-c", containerName)
+	cmd := exec.Command("kubectl", "logs", "-n", namespace, podName, "-c", containerName, "--timestamps=true")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
