@@ -32,6 +32,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var pipelinesNamespace string
+var pipelinesRuntime string
+
 // pipelinesCmd represents the pipelines command
 var pipelinesCmd = &cobra.Command{
 	Use:   "pipelines",
@@ -39,45 +42,59 @@ var pipelinesCmd = &cobra.Command{
 	Long:  `Collect data for the Codefresh Pipelines Runtime`,
 	Run: func(cmd *cobra.Command, args []string) {
 		const RuntimeType = "Codefresh Pipelines Runtime"
+		var runtimes []map[string]interface{}
+		var reSpec map[string]interface{}
+
 		dirPath := fmt.Sprintf("./codefresh-support-%d", time.Now().Unix())
+
 		cfConfig, err := codefresh.GetCodefreshCreds()
 		if err != nil {
 			cmd.PrintErrln("Error getting Codefresh credentials:", err)
-			return
 		}
 
-		runtimes, err := codefresh.AccountRuntimes(cfConfig)
-		if err != nil {
-			cmd.PrintErrln("Error getting Codefresh runtimes:", err)
-			return
-		}
-
-		var pipelinesNamespace string
-		var reSpec map[string]interface{}
-
-		if len(runtimes) != 0 {
-			var selection int
-			for index, runtime := range runtimes {
-				cmd.Printf("%d. %s\n", index+1, runtime["metadata"].(map[string]interface{})["name"])
-			}
-			for {
-				cmd.Print("\nPlease select the runtime to gather data from (Number): ")
-				_, err := fmt.Scanf("%d", &selection)
-				if err != nil || selection < 1 || selection > len(runtimes) {
-					cmd.PrintErrln("Invalid selection. Please enter a number corresponding to one of the listed runtimes.")
-					continue
+		if cfConfig != nil {
+			if pipelinesRuntime != "" {
+				reSpec, err = codefresh.SingleRuntime(cfConfig, pipelinesRuntime)
+				if err != nil {
+					cmd.PrintErrln("Error getting Codefresh runtimes:", err)
 				}
-				break
+
+			} else {
+				runtimes, err = codefresh.AccountRuntimes(cfConfig)
+				if err != nil {
+					cmd.PrintErrln("Error getting Codefresh runtimes:", err)
+				}
+
+				if len(runtimes) != 0 {
+					var selection int
+					for index, runtime := range runtimes {
+						cmd.Printf("%d. %s\n", index+1, runtime["metadata"].(map[string]interface{})["name"])
+					}
+					for {
+						cmd.Print("\nPlease select the runtime to gather data from (Number): ")
+						_, err := fmt.Scanf("%d", &selection)
+						if err != nil || selection < 1 || selection > len(runtimes) {
+							cmd.PrintErrln("Invalid selection. Please enter a number corresponding to one of the listed runtimes.")
+							continue
+						}
+						break
+
+					}
+					reSpec = runtimes[selection-1]
+				}
 
 			}
-			reSpec = runtimes[selection-1]
-			pipelinesNamespace = reSpec["runtimeScheduler"].(map[string]interface{})["cluster"].(map[string]interface{})["namespace"].(string)
-		} else {
-			cmd.Println("No runtimes found in Codefresh account.")
-			pipelinesNamespace, err = k8s.SelectNamespace(RuntimeType)
-			if err != nil {
-				cmd.PrintErrf("error getting Kubernetes namespace: %v", err)
-				return
+		}
+
+		if pipelinesNamespace == "" {
+			if reSpec != nil {
+				pipelinesNamespace = reSpec["runtimeScheduler"].(map[string]interface{})["cluster"].(map[string]interface{})["namespace"].(string)
+			} else {
+				pipelinesNamespace, err = k8s.SelectNamespace(RuntimeType)
+				if err != nil {
+					cmd.PrintErrf("error getting Kubernetes namespace: %v", err)
+					return
+				}
 			}
 		}
 
@@ -119,4 +136,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// pipelinesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	pipelinesCmd.Flags().StringVarP(&pipelinesNamespace, "namespace", "n", "", "The namespace where the Runtime is installed")
+	pipelinesCmd.Flags().StringVarP(&pipelinesRuntime, "runtime", "re", "", "The name of the Pipelines Runtime")
 }
