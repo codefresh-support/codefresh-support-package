@@ -1,3 +1,3 @@
 export function gitops(namespace: string) {
-  console.log(namespace);
+    console.log(namespace);
 }
