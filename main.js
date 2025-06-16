@@ -1,5 +1,5 @@
 import { Command } from '@cliffy/command';
-import * as cmd from './src/index.ts';
+import * as cmd from './src/index.js';
 
 await new Command()
     .name('cf-support')
@@ -12,7 +12,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the GitOps Runtime is installed', {
                 required: false,
             })
-            .action((options: { namespace: string }) => {
+            .action((options) => {
                 cmd.gitops(options.namespace);
             }),
     )
@@ -24,7 +24,7 @@ await new Command()
                 required: false,
             })
             .option('-r, --runtime <runtime:string>', 'The name of the Pipelines Runtime', { required: false })
-            .action((options: { namespace: string; runtime: string }) => {
+            .action((options) => {
                 cmd.pipelines(options.namespace, options.runtime);
             }),
     )
@@ -35,7 +35,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where Codefresh OnPrem is installed', {
                 required: false,
             })
-            .action((options: { namespace: string }) => {
+            .action((options) => {
                 cmd.onprem(options.namespace);
             }),
     )
@@ -46,7 +46,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the OSS ArgoCD is installed', {
                 required: false,
             })
-            .action((options: { namespace: string }) => {
+            .action((options) => {
                 cmd.oss(options.namespace);
             }),
     )

@@ -1,7 +1,7 @@
 import { autoDetectClient } from '@cloudydeno/kubernetes-client';
 import { AppsV1Api } from '@cloudydeno/kubernetes-apis/apps/v1';
 import { BatchV1Api } from '@cloudydeno/kubernetes-apis/batch/v1';
-import { CoreV1Api, Pod } from '@cloudydeno/kubernetes-apis/core/v1';
+import { CoreV1Api } from '@cloudydeno/kubernetes-apis/core/v1';
 import { StorageV1Api } from '@cloudydeno/kubernetes-apis/storage.k8s.io/v1';
 import { ApiextensionsV1Api } from '@cloudydeno/kubernetes-apis/apiextensions.k8s.io/v1';
 
@@ -13,10 +13,10 @@ const crdApi = new ApiextensionsV1Api(kubeConfig);
 const storageApi = new StorageV1Api(kubeConfig);
 
 export async function selectNamespace() {
-    const namespaces = (await coreApi.getNamespaceList()).items.map((namespace) => namespace.metadata?.name);
+    const namespaces = (await coreApi.getNamespaceList()).items.map((namespace) => namespace.metadata.name);
 
     namespaces.forEach((namespace, index) => {
-        console.log(`${index + 1}. ${namespace}`);
+        console.log(`${index}. ${namespace}`);
     });
 
     let selection;
@@ -25,19 +25,18 @@ export async function selectNamespace() {
         if (isNaN(selection) || selection < 1 || selection > namespaces.length) {
             console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
         }
-    } while (isNaN(selection) || selection < 1 || selection > namespaces.length);
+    } while (isNaN(selection) || selection < 0 || selection >= namespaces.length);
 
-    return namespaces[selection - 1];
+    return namespaces[selection];
 }
 
-export async function getPodLogs(pod: Pod) {
-    const podName = pod.metadata?.name;
-    const namespace = pod.metadata?.namespace;
-    if (!podName || !namespace) throw new Error('Pod name or namespace is missing');
+export async function getPodLogs(pod) {
+    const podName = pod.metadata.name;
+    const namespace = pod.metadata.namespace;
 
-    const containers = (pod.spec?.containers ?? []).map((c) => c.name);
+    const containers = pod.spec.containers.map((container) => container.name);
 
-    const logs: Record<string, string> = {};
+    const logs = {};
     for (const container of containers) {
         logs[container] = await coreApi
             .namespace(namespace)
@@ -46,12 +45,12 @@ export async function getPodLogs(pod: Pod) {
     return logs;
 }
 
-async function getCrd(type: string, namespace: string) {
+async function getCrd(type, namespace) {
     try {
         const crd = await crdApi.getCustomResourceDefinition(type);
 
         const path = `/apis/${crd.spec.group}/${
-            crd.spec.versions.find((v: any) => v.served)?.name
+            crd.spec.versions.find((v) => v.served)?.name
         }/namespaces/${namespace}/${crd.spec.names.plural}`;
 
         const response = await kubeConfig.performRequest({
@@ -65,8 +64,8 @@ async function getCrd(type: string, namespace: string) {
     }
 }
 
-export function getResources(namespace: string) {
-    const k8sResourceType = {
+export function getResources(namespace) {
+    const k8sResourceTypes = {
         'configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'cronjobs.batch': () => batchApi.namespace(namespace).getCronJobList(),
         'daemonsets.apps': () => appsApi.namespace(namespace).getDaemonSetList(),
@@ -99,5 +98,5 @@ export function getResources(namespace: string) {
         'sensors.argoproj.io': () => getCrd('sensors.argoproj.io', namespace),
     };
 
-    return k8sResourceType;
+    return k8sResourceTypes;
 }

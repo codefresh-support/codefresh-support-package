@@ -1,21 +1,6 @@
 import { parse } from '@std/yaml';
 
-type CodefreshConfig = {
-    'current-context': string;
-    contexts: {
-        [key: string]: {
-            token: string;
-            url: string;
-        };
-    };
-};
-
-type CFCreds = {
-    headers: { Authorization: string };
-    baseUrl: string;
-};
-
-export function getCodefreshCredentials(): CFCreds {
+export function getCodefreshCredentials() {
     const envToken = Deno.env.get('CF_API_KEY');
     const envUrl = Deno.env.get('CF_BASE_URL');
 
@@ -31,7 +16,7 @@ export function getCodefreshCredentials(): CFCreds {
         : `${Deno.env.get('HOME')}/.cfconfig`;
 
     const configFileContent = Deno.readTextFileSync(configPath);
-    const config = parse(configFileContent) as CodefreshConfig;
+    const config = parse(configFileContent);
     const currentContext = config.contexts[config['current-context']];
 
     if (!currentContext) {
@@ -44,7 +29,7 @@ export function getCodefreshCredentials(): CFCreds {
     };
 }
 
-export async function getAccountRuntimes(cfCreds: CFCreds) {
+export async function getAccountRuntimes(cfCreds) {
     const response = await fetch(`${cfCreds.baseUrl}/runtime-environments`, {
         method: 'GET',
         headers: cfCreds.headers,
@@ -53,7 +38,7 @@ export async function getAccountRuntimes(cfCreds: CFCreds) {
     return runtimes;
 }
 
-export async function getRuntimeSpec(cfCreds: CFCreds, runtime: string) {
+export async function getRuntimeSpec(cfCreds, runtime) {
     const response = await fetch(`${cfCreds.baseUrl}/runtime-environments/${encodeURIComponent(runtime)}`, {
         method: 'GET',
         headers: cfCreds.headers,
@@ -62,7 +47,7 @@ export async function getRuntimeSpec(cfCreds: CFCreds, runtime: string) {
     return runtimeSpec;
 }
 
-export async function getAllAccounts(cfCreds: CFCreds) {
+export async function getAllAccounts(cfCreds) {
     const response = await fetch(`${cfCreds.baseUrl}/admin/accounts`, {
         method: 'GET',
         headers: cfCreds.headers,
@@ -71,7 +56,7 @@ export async function getAllAccounts(cfCreds: CFCreds) {
     return accounts;
 }
 
-export async function getAllRuntimes(cfCreds: CFCreds) {
+export async function getAllRuntimes(cfCreds) {
     const response = await fetch(`${cfCreds.baseUrl}/admin/runtime-environments`, {
         method: 'GET',
         headers: cfCreds.headers,
@@ -80,7 +65,7 @@ export async function getAllRuntimes(cfCreds: CFCreds) {
     return onPremRuntimes;
 }
 
-export async function getTotalUsers(cfCreds: CFCreds) {
+export async function getTotalUsers(cfCreds) {
     const response = await fetch(`${cfCreds.baseUrl}/admin/user?limit=1&page=1`, {
         method: 'GET',
         headers: cfCreds.headers,
@@ -89,7 +74,7 @@ export async function getTotalUsers(cfCreds: CFCreds) {
     return users.total;
 }
 
-export async function getSystemFeatureFlags(cfCreds: CFCreds) {
+export async function getSystemFeatureFlags(cfCreds) {
     const response = await fetch(`${cfCreds.baseUrl}/admin/features`, {
         method: 'GET',
         headers: cfCreds.headers,
