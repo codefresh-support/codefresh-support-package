@@ -64,13 +64,21 @@ async function getCrd(type, namespace) {
     }
 }
 
+async function getSortedEvents(namespace) {
+    const events = await coreApi.namespace(namespace).getEventList();
+    events.items = events.items.sort((a, b) =>
+        new Date(a.metadata.creationTimestamp) - new Date(b.metadata.creationTimestamp)
+    );
+    return events;
+}
+
 export function getResources(namespace) {
     const k8sResourceTypes = {
         'configmaps': () => coreApi.namespace(namespace).getConfigMapList(),
         'cronjobs.batch': () => batchApi.namespace(namespace).getCronJobList(),
         'daemonsets.apps': () => appsApi.namespace(namespace).getDaemonSetList(),
         'deployments.apps': () => appsApi.namespace(namespace).getDeploymentList(),
-        'events.k8s.io': () => coreApi.namespace(namespace).getEventList(),
+        'events.k8s.io': () => getSortedEvents(namespace),
         'jobs.batch': () => batchApi.namespace(namespace).getJobList(),
         'nodes': () => coreApi.getNodeList(),
         'pods': () => coreApi.namespace(namespace).getPodList(),
