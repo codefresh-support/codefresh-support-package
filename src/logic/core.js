@@ -23,6 +23,10 @@ export async function processData(dirPath, k8sResources) {
     for (const [k8sType, fetcher] of Object.entries(k8sResources)) {
         const resources = await fetcher();
 
+        if (!resources) {
+            continue
+        }
+
         if (k8sType == 'pods') {
             for (const pod of resources.items) {
                 delete pod.metadata.managedFields;
@@ -60,6 +64,7 @@ export async function processData(dirPath, k8sResources) {
             continue;
         }
 
+        
         resources.items.map((data) => {
             delete data.metadata.managedFields;
             writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);

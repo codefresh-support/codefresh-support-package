@@ -2,7 +2,7 @@ import { parse } from '@std/yaml';
 
 export function getCodefreshCredentials() {
     const envToken = Deno.env.get('CF_API_KEY');
-    const envUrl = Deno.env.get('CF_BASE_URL');
+    const envUrl = Deno.env.get('CF_URL');
 
     if (envToken && envUrl) {
         return {

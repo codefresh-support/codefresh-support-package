@@ -9,7 +9,7 @@ import {
 } from './logic/codefresh.js';
 
 export async function onprem(namespace) {
-    const dirPath = `./cf-support-gitops-${Math.floor(Date.now() / 1000)}`;
+    const dirPath = `./cf-support-onprem-${Math.floor(Date.now() / 1000)}`;
 
     const cfCreds = getCodefreshCredentials();
 
@@ -27,14 +27,14 @@ export async function onprem(namespace) {
     }
 
     if (cfCreds) {
-        accounts = await getAllAccounts(cfCreds);
+        const accounts = await getAllAccounts(cfCreds);
         writeYaml(accounts, 'OnPrem_Accounts', dirPath);
-        runtimes = await getAllRuntimes(cfCreds);
-        writeYaml(accounts, 'OnPrem_Accounts', dirPath);
-        featureFlags = await getSystemFeatureFlags(cfCreds);
-        writeYaml(accounts, 'OnPrem_Accounts', dirPath);
-        totalUsers = await getTotalUsers(cfCreds);
-        writeYaml(accounts, 'OnPrem_Accounts', dirPath);
+        const runtimes = await getAllRuntimes(cfCreds);
+        writeYaml(runtimes, 'OnPrem_Runtimes', dirPath);
+        const featureFlags = await getSystemFeatureFlags(cfCreds);
+        writeYaml(featureFlags, 'OnPrem_Feature_Flags', dirPath);
+        const totalUsers = await getTotalUsers(cfCreds);
+        writeYaml(totalUsers, 'OnPrem_Total_Users', dirPath);
     }
 
     console.log(`Gathering data in the '${namespace}' namespace for Codefresh OnPrem`);

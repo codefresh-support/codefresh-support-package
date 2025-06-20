@@ -3,7 +3,7 @@ import { preparePackage, processData, writeYaml } from './logic/core.js';
 import { getAccountRuntimes, getCodefreshCredentials, getRuntimeSpec } from './logic/codefresh.js';
 
 export async function pipelines(namespace, runtime) {
-    const dirPath = `./cf-support-gitops-${Math.floor(Date.now() / 1000)}`;
+    const dirPath = `./cf-support-pipelines-${Math.floor(Date.now() / 1000)}`;
     const cfCreds = getCodefreshCredentials();
 
     if (!namespace) {
@@ -29,11 +29,11 @@ export async function pipelines(namespace, runtime) {
                     }
                 } while (isNaN(selection) || selection < 1 || selection > runtimes.length);
 
-                reSpec = runtimes[selection - 1];
+                const reSpec = runtimes[selection - 1];
                 writeYaml(reSpec, 'Runtime_Spec', dirPath);
             }
         } else {
-            reSpec = getRuntimeSpec(cfCreds, runtime);
+            const reSpec = getRuntimeSpec(cfCreds, runtime);
             writeYaml(reSpec, 'Runtime_Spec', dirPath);
         }
     }
