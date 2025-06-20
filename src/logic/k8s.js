@@ -16,7 +16,7 @@ export async function selectNamespace() {
     const namespaces = (await coreApi.getNamespaceList()).items.map((namespace) => namespace.metadata.name);
 
     namespaces.forEach((namespace, index) => {
-        console.log(`${index}. ${namespace}`);
+        console.log(`${index + 1}. ${namespace}`);
     });
 
     let selection;
@@ -25,9 +25,9 @@ export async function selectNamespace() {
         if (isNaN(selection) || selection < 1 || selection > namespaces.length) {
             console.log('Invalid selection. Please enter a number corresponding to one of the listed namespaces.');
         }
-    } while (isNaN(selection) || selection < 0 || selection >= namespaces.length);
+    } while (isNaN(selection) || selection < 1 || selection > namespaces.length);
 
-    return namespaces[selection];
+    return namespaces[selection - 1];
 }
 
 export async function getPodLogs(pod) {

@@ -20,7 +20,7 @@ export function getCodefreshCredentials() {
     const currentContext = config.contexts[config['current-context']];
 
     if (!currentContext) {
-        throw new Error('Current context not found in Codefresh config.');
+        return null;
     }
 
     return {
@@ -71,7 +71,7 @@ export async function getTotalUsers(cfCreds) {
         headers: cfCreds.headers,
     });
     const users = await response.json();
-    return users.total;
+    return { totalUsers: users.total };
 }
 
 export async function getSystemFeatureFlags(cfCreds) {
