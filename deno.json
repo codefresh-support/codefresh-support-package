@@ -1,0 +1,30 @@
+{
+    "fmt": {
+        "indentWidth": 4,
+        "lineWidth": 120,
+        "singleQuote": true,
+        "semiColons": true,
+        "exclude": [
+            ".devcontainer/**",
+            "README.md",
+            ".github/**"
+        ]
+    },
+    "tasks": {
+        "pre-compile": "rm -rf ./bin && mkdir ./bin",
+        "compile:linux_amd64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_linux_amd64 --target=x86_64-unknown-linux-gnu ./main.js",
+        "compile:linux_arm64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_linux_arm64 --target=aarch64-unknown-linux-gnu ./main.js",
+        "compile:apple_amd64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_amd64 --target=x86_64-apple-darwin ./main.js",
+        "compile:apple_arm64": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_darwin_arm64 --target=aarch64-apple-darwin ./main.js",
+        "compile:windows": "deno compile --config=./deno.json --allow-env --allow-read --allow-write --allow-net --unsafely-ignore-certificate-errors --allow-run --output=./bin/cf-support_windows_amd64 --target=x86_64-pc-windows-msvc ./main.js",
+        "compile": "deno task pre-compile && deno task compile:linux_amd64 && deno task compile:linux_arm64 && deno task compile:windows && deno task compile:apple_amd64 && deno task compile:apple_arm64",
+        "package": "tar -czvf ./bin/cf-support_linux_amd64.tar.gz ./bin/cf-support_linux_amd64 && tar -czvf ./bin/cf-support_linux_arm64.tar.gz ./bin/cf-support_linux_arm64 && tar -czvf ./bin/cf-support_darwin_amd64.tar.gz ./bin/cf-support_darwin_amd64 && tar -czvf ./bin/cf-support_darwin_arm64.tar.gz ./bin/cf-support_darwin_arm64 && zip ./bin/cf-support_windows_amd64.zip ./bin/cf-support_windows_amd64.exe"
+    },
+    "imports": {
+        "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
+        "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@0.5.2",
+        "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@0.7.5",
+        "@deno-library/compress": "jsr:@deno-library/compress@^0.5.6",
+        "@std/yaml": "jsr:@std/yaml@1.0.7"
+    }
+}
