@@ -59,7 +59,7 @@ export async function processData(dirPath, k8sResources) {
             const header = 'LAST SEEN\tTYPE\tREASON\tOBJECT\tMESSAGE\n';
             const content = header + formattedEvents.join('\n');
 
-            Deno.writeTextFileSync(`${dirPath}/${k8sType}.txt`, content);
+            Deno.writeTextFileSync(`${dirPath}/${k8sType}.csv`, content);
 
             continue;
         }
