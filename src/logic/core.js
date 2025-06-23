@@ -24,7 +24,7 @@ export async function processData(dirPath, k8sResources) {
         const resources = await fetcher();
 
         if (!resources) {
-            continue
+            continue;
         }
 
         if (k8sType == 'pods') {
@@ -46,7 +46,9 @@ export async function processData(dirPath, k8sResources) {
 
         if (k8sType == 'events.k8s.io') {
             const formattedEvents = resources.items.map((event) => {
-                const lastSeen = event.metadata.creationTimestamp || 'Invalid Date';
+                const lastSeen = event.metadata.creationTimestamp
+                    ? new Date(event.metadata.creationTimestamp).toISOString()
+                    : 'Invalid Date';
                 const type = event.type || 'Unknown';
                 const reason = event.reason || 'Unknown';
                 const object = `${event.involvedObject.kind}/${event.involvedObject.name}`;
@@ -63,7 +65,6 @@ export async function processData(dirPath, k8sResources) {
             continue;
         }
 
-        
         resources.items.map((data) => {
             delete data.metadata.managedFields;
             writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);

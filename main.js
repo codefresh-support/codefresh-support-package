@@ -5,7 +5,7 @@ await new Command()
     .name('cf-support')
     .version('__APP_VERSION__')
     .description('Tool to gather information for Codefresh Support')
-    .action( function () {
+    .action(function () {
         this.showHelp();
     })
     .command(
