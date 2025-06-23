@@ -46,8 +46,7 @@ export async function processData(dirPath, k8sResources) {
 
         if (k8sType == 'events.k8s.io') {
             const formattedEvents = resources.items.map((event) => {
-                const lastSeen = new Date(event.lastTimestamp || event.eventTime || event.metadata.creationTimestamp)
-                    .toISOString();
+                const lastSeen = event.metadata.creationTimestamp || 'Invalid Date';
                 const type = event.type || 'Unknown';
                 const reason = event.reason || 'Unknown';
                 const object = `${event.involvedObject.kind}/${event.involvedObject.name}`;
