@@ -6,9 +6,14 @@ import { getSemaphore } from '@henrygd/semaphore';
 const semaphore = getSemaphore('supportPackageSemaphore', 10);
 
 export async function writeYaml(data, name, dirPath) {
-    await Deno.mkdir(dirPath, { recursive: true });
-    const filePath = `${dirPath}/${name}.yaml`;
-    await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
+    await semaphore.acquire();
+    try {
+        await Deno.mkdir(dirPath, { recursive: true });
+        const filePath = `${dirPath}/${name}.yaml`;
+        await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
+    } finally {
+        semaphore.release();
+    }
 }
 
 export async function preparePackage(dirPath) {
