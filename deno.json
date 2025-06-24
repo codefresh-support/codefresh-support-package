@@ -25,6 +25,7 @@
         "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@0.5.2",
         "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@0.7.5",
         "@deno-library/compress": "jsr:@deno-library/compress@^0.5.6",
+        "@henrygd/semaphore": "jsr:@henrygd/semaphore@^0.0.2",
         "@std/yaml": "jsr:@std/yaml@1.0.7"
     }
 }

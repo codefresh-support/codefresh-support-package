@@ -30,11 +30,11 @@ export async function pipelines(namespace, runtime) {
                 } while (isNaN(selection) || selection < 1 || selection > runtimes.length);
 
                 const reSpec = runtimes[selection - 1];
-                writeYaml(reSpec, 'Runtime_Spec', dirPath);
+                await writeYaml(reSpec, 'Runtime_Spec', dirPath);
             }
         } else {
-            const reSpec = getRuntimeSpec(cfCreds, runtime);
-            writeYaml(reSpec, 'Runtime_Spec', dirPath);
+            const reSpec = await getRuntimeSpec(cfCreds, runtime);
+            await writeYaml(reSpec, 'Runtime_Spec', dirPath);
         }
     }
 

@@ -11,6 +11,7 @@
     "jsr:@cloudydeno/stream-observables@1": "1.4.1",
     "jsr:@deno-library/compress@~0.5.6": "0.5.6",
     "jsr:@deno-library/crc32@1.0.2": "1.0.2",
+    "jsr:@henrygd/semaphore@^0.0.2": "0.0.2",
     "jsr:@std/bytes@^1.0.2": "1.0.4",
     "jsr:@std/fmt@~1.0.2": "1.0.3",
     "jsr:@std/fs@1.0.5": "1.0.5",
@@ -96,6 +97,9 @@
     "@deno-library/crc32@1.0.2": {
       "integrity": "d2061bfee30c87c97f285dfca0fdc4458e632dc072a33ecfc73ca5177a5a39a0"
     },
+    "@henrygd/semaphore@0.0.2": {
+      "integrity": "cdf678250474b9445648d4fb8d8c636fe313f54893a50de616bf8d3e14f3b51e"
+    },
     "@std/bytes@1.0.4": {
       "integrity": "11a0debe522707c95c7b7ef89b478c13fb1583a7cfb9a85674cd2cc2e3a28abc"
     },
@@ -165,6 +169,7 @@
       "jsr:@cloudydeno/kubernetes-apis@0.5.2",
       "jsr:@cloudydeno/kubernetes-client@0.7.5",
       "jsr:@deno-library/compress@~0.5.6",
+      "jsr:@henrygd/semaphore@^0.0.2",
       "jsr:@std/yaml@1.0.7"
     ]
   }
