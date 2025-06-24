@@ -27,14 +27,21 @@ export async function onprem(namespace) {
     }
 
     if (cfCreds) {
-        const accounts = await getAllAccounts(cfCreds);
-        writeYaml(accounts, 'OnPrem_Accounts', dirPath);
-        const runtimes = await getAllRuntimes(cfCreds);
-        writeYaml(runtimes, 'OnPrem_Runtimes', dirPath);
-        const featureFlags = await getSystemFeatureFlags(cfCreds);
-        writeYaml(featureFlags, 'OnPrem_Feature_Flags', dirPath);
-        const totalUsers = await getTotalUsers(cfCreds);
-        writeYaml(totalUsers, 'OnPrem_Total_Users', dirPath);
+        const dataFetchers = [
+            { name: 'OnPrem_Accounts', fetcher: getAllAccounts },
+            { name: 'OnPrem_Runtimes', fetcher: getAllRuntimes },
+            { name: 'OnPrem_Feature_Flags', fetcher: getSystemFeatureFlags },
+            { name: 'OnPrem_Total_Users', fetcher: getTotalUsers },
+        ];
+
+        for (const { name, fetcher } of dataFetchers) {
+            try {
+                const data = await fetcher(cfCreds);
+                await writeYaml(data, name, dirPath);
+            } catch (error) {
+                console.error(`Failed to fetch or write ${name}:`, error.message);
+            }
+        }
     }
 
     console.log(`Gathering data in the '${namespace}' namespace for Codefresh OnPrem`);
