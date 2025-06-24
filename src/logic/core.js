@@ -6,14 +6,9 @@ import { getSemaphore } from '@henrygd/semaphore';
 const semaphore = getSemaphore('supportPackageSemaphore', 10);
 
 export async function writeYaml(data, name, dirPath) {
-    await semaphore.acquire();
-    try {
-        await Deno.mkdir(dirPath, { recursive: true });
-        const filePath = `${dirPath}/${name}.yaml`;
-        await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
-    } finally {
-        semaphore.release();
-    }
+    await Deno.mkdir(dirPath, { recursive: true });
+    const filePath = `${dirPath}/${name}.yaml`;
+    await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
 }
 
 export async function preparePackage(dirPath) {
@@ -41,24 +36,24 @@ export async function processData(dirPath, k8sResources) {
         }
 
         if (k8sType == 'pods') {
-            await Promise.all(
-                resources.items.map(async (pod) => {
-                    await semaphore.acquire();
-                    try {
-                        delete pod.metadata.managedFields;
-                        await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
-                        const logs = await getPodLogs(pod);
-                        for (const [containerName, logData] of Object.entries(logs)) {
-                            await Deno.writeTextFile(
-                                `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
-                                logData,
-                            );
-                        }
-                    } finally {
-                        semaphore.release();
+            for (const pod of resources.items) {
+                await semaphore.acquire();
+                try {
+                    delete pod.metadata.managedFields;
+
+                    await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
+
+                    const logs = await getPodLogs(pod);
+                    for (const [containerName, logData] of Object.entries(logs)) {
+                        await Deno.writeTextFile(
+                            `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
+                            logData,
+                        );
                     }
-                }),
-            );
+                } finally {
+                    semaphore.release();
+                }
+            }
             continue;
         }
 
@@ -79,25 +74,18 @@ export async function processData(dirPath, k8sResources) {
             const content = header + formattedEvents.join('\n');
 
             await Deno.writeTextFile(`${dirPath}/${k8sType}.csv`, content);
-            await semaphore.acquire();
-            try {
-                await Deno.writeTextFile(`${dirPath}/${k8sType}.csv`, content);
-            } finally {
-                semaphore.release();
-            }
+
             continue;
         }
 
-        await Promise.all(
-            resources.items.map(async (data) => {
-                await semaphore.acquire();
-                try {
-                    delete data.metadata.managedFields;
-                    await writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);
-                } finally {
-                    semaphore.release();
-                }
-            }),
-        );
+        await Promise.all(resources.items.map(async (data) => {
+            await semaphore.acquire();
+            try {
+                delete data.metadata.managedFields;
+                await writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);
+            } finally {
+                semaphore.release();
+            }
+        }));
     }
 }
