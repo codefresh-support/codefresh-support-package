@@ -38,7 +38,7 @@ export async function pipelines(namespace, runtime) {
         }
     }
 
-    console.log(`Gathering data in the '${namespace}' namespace for Codefresh Pipelines`);
+    console.log(`Gathering data in the '${namespace}' namespace for Pipelines Runtime`);
     const k8sResources = getResources(namespace);
     await processData(dirPath, k8sResources);
     await preparePackage(dirPath);
