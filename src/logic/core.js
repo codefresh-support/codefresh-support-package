@@ -3,20 +3,16 @@ import { tgz } from '@deno-library/compress';
 import { getPodLogs } from './k8s.js';
 import { getSemaphore } from '@henrygd/semaphore';
 
-const semaphore = getSemaphore('supportPackageSemaphore', 10);
+
 
 export async function writeYaml(data, name, dirPath) {
-    await semaphore.acquire();
-    try {
-        await Deno.mkdir(dirPath, { recursive: true });
-        const filePath = `${dirPath}/${name}.yaml`;
-        await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
-    } finally {
-        semaphore.release();
-    }
+    await Deno.mkdir(dirPath, { recursive: true });
+    const filePath = `${dirPath}/${name}.yaml`;
+    await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
 }
 
 export async function preparePackage(dirPath) {
+    const semaphore = getSemaphore("zipfile", 10);
     await semaphore.acquire();
     try {
         const supportPackageZip = `${dirPath}.tar.gz`;
@@ -40,6 +36,9 @@ export async function processData(dirPath, k8sResources) {
             continue;
         }
 
+        const semaphore = getSemaphore(k8sType, 10);
+        console.log(`Processing Data for ${k8sType}`)
+
         if (k8sType == 'pods') {
             for (const pod of resources.items) {
                 await semaphore.acquire();
@@ -48,7 +47,8 @@ export async function processData(dirPath, k8sResources) {
 
                     await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
 
-                    const logs = await getPodLogs(pod);
+                    const logs = await getPodLogs(pod.metadata.name);
+                    console.log(`Gathering logs for pod ${pod}`);
                     for (const [containerName, logData] of Object.entries(logs)) {
                         await Deno.writeTextFile(
                             `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
