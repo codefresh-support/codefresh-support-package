@@ -38,9 +38,14 @@ export async function getPodLogs(pod) {
 
     const logs = {};
     for (const container of containers) {
-        logs[container] = await coreApi
+        try {
+            logs[container] = await coreApi
             .namespace(namespace)
             .getPodLog(podName, { container: container, timestamps: true });
+        } catch (error) {
+            logs[container] = error
+        }
+        
     }
     return logs;
 }
