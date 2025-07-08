@@ -47,8 +47,8 @@ export async function processData(dirPath, k8sResources) {
 
                     await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
 
-                    const logs = await getPodLogs(pod.metadata.name);
-                    console.log(`Gathering logs for pod ${pod}`);
+                    const logs = await getPodLogs(pod);
+                    console.log(`Gathering logs for pod ${pod.metadata.name}`);
                     for (const [containerName, logData] of Object.entries(logs)) {
                         await Deno.writeTextFile(
                             `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
