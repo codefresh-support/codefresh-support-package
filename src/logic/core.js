@@ -1,9 +1,6 @@
 import { stringify as toYaml } from '@std/yaml';
-import { tgz } from '@deno-library/compress';
 import { getPodLogs } from './k8s.js';
 import { getSemaphore } from '@henrygd/semaphore';
-
-
 
 export async function writeYaml(data, name, dirPath) {
     await Deno.mkdir(dirPath, { recursive: true });
@@ -12,17 +9,24 @@ export async function writeYaml(data, name, dirPath) {
 }
 
 export async function preparePackage(dirPath) {
-    const semaphore = getSemaphore("zipfile", 10);
-    await semaphore.acquire();
     try {
         const supportPackageZip = `${dirPath}.tar.gz`;
         console.log('Preparing the Support Package');
-        await tgz.compress(dirPath, supportPackageZip);
+        const command = new Deno.Command('tar', {
+            args: ['-czf', supportPackageZip, dirPath],
+        });
+        const { code, _stdout, stderr } = await command.output();
+
+        if (code !== 0) {
+            console.error(new TextDecoder().decode(stderr));
+            throw new Error(`Failed to create tar.gz file: ${supportPackageZip}. \n ${stderr}`);
+        }
         console.log('Cleaning up temp directory');
         await Deno.remove(dirPath, { recursive: true });
         console.log(`\nPlease attach ${supportPackageZip} to your support ticket.`);
-    } finally {
-        semaphore.release();
+    } catch (error) {
+        console.log(error);
+        console.log(`\nPlease manually compress the directory ${dirPath} and attach it to the support ticket.`);
     }
 }
 
@@ -37,7 +41,7 @@ export async function processData(dirPath, k8sResources) {
         }
 
         const semaphore = getSemaphore(k8sType, 10);
-        console.log(`Processing Data for ${k8sType}`)
+        console.log(`Processing Data for ${k8sType}`);
 
         if (k8sType == 'pods') {
             for (const pod of resources.items) {
