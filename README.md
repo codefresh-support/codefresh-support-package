@@ -26,11 +26,11 @@ The binary is built on using `ubuntu-latest`.  You can find what is included in 
 ### macOS - arm64
 
 ```shell
-# Get the version at https://github.com/codefresh-support/codefresh-support-package/releases
+# Get the version at https://github.com/codefresh-io/codefresh-support-package/releases
 VERSION=v#.#.#
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_arm64.tar.gz | tar -zx -O cf-support_darwin_arm64 > cf-support
+curl -L --output - https://github.com/codefresh-io/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_arm64.tar.gz | tar -zx -O cf-support_darwin_arm64 > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -42,11 +42,11 @@ chmod +x cf-support
 ### macOS - amd64
 
 ```shell
-# Get the version at https://github.com/codefresh-support/codefresh-support-package/releases
+# Get the version at https://github.com/codefresh-io/codefresh-support-package/releases
 VERSION=v#.#.#
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_amd64.tar.gz | tar -zx -O cf-support_darwin_amd64 > cf-support
+curl -L --output - https://github.com/codefresh-io/codefresh-support-package/releases/download/$VERSION/cf-support_darwin_amd64.tar.gz | tar -zx -O cf-support_darwin_amd64 > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -58,11 +58,11 @@ chmod +x cf-support
 ### linux - arm64
 
 ```shell
-# Get the version at https://github.com/codefresh-support/codefresh-support-package/releases
+# Get the version at https://github.com/codefresh-io/codefresh-support-package/releases
 VERSION=v#.#.#
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_linux_arm64.tar.gz | tar -zx -O cf-support_linux_arm64 > cf-support
+curl -L --output - https://github.com/codefresh-io/codefresh-support-package/releases/download/$VERSION/cf-support_linux_arm64.tar.gz | tar -zx -O cf-support_linux_arm64 > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -74,11 +74,11 @@ chmod +x cf-support
 ### linux - amd64
 
 ```shell
-# Get the version at https://github.com/codefresh-support/codefresh-support-package/releases
+# Get the version at https://github.com/codefresh-io/codefresh-support-package/releases
 VERSION=v#.#.#
 
 # download and extract the binary
-curl -L --output - https://github.com/codefresh-support/codefresh-support-package/releases/download/$VERSION/cf-support_linux_amd64.tar.gz | tar -zx -O cf-support_linux_amd64 > cf-support
+curl -L --output - https://github.com/codefresh-io/codefresh-support-package/releases/download/$VERSION/cf-support_linux_amd64.tar.gz | tar -zx -O cf-support_linux_amd64 > cf-support
 
 # set execution to binary
 chmod +x cf-support
@@ -89,7 +89,7 @@ chmod +x cf-support
 
 ### Windows - amd6
 
-1. Go the the [Latest](https://github.com/codefresh-support/codefresh-support-package/releases/latest) release.
+1. Go the the [Latest](https://github.com/codefresh-io/codefresh-support-package/releases/latest) release.
 1. Download the cf-support_windows_amd64.zip file
 1. Run the `.exe` file via CMD or PowerShell
 
