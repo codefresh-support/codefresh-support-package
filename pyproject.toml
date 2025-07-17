@@ -7,11 +7,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.1",
+    "requests>=2.32"
 ]
 
 [project.scripts]
 cf-support = "cf_support.cli:cli"
 
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools>=80.9", "setuptools_scm>=8.3"]
 build-backend = "setuptools.build_meta"
