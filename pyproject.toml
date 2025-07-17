@@ -7,7 +7,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1",
-    "requests>=2.32"
+    "kubernetes>=31.1"
+    "PyYAML>=6.0"
+    "requests>=2.32",
 ]
 
 [project.scripts]

@@ -2,7 +2,7 @@
 {
   "name": "Codefresh Support Package",
   "image": "mcr.microsoft.com/devcontainers/universal:3",
-  // "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
+  "onCreateCommand": "python3 -m venv .venv && source .venv/bin/activate && pip3 install -e .",
   "customizations": {
     "vscode": {
       // "settings": {
