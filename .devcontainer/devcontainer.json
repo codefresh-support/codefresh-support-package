@@ -2,17 +2,18 @@
 {
   "name": "Codefresh Support Package",
   "image": "mcr.microsoft.com/devcontainers/universal:3",
-  "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
+  // "onCreateCommand": "curl -fsSL https://deno.land/install.sh | sh -s -- -y",
   "customizations": {
     "vscode": {
-      "settings": {
-        "deno.enable": true,
-        "deno.lint": true
-      },
+      // "settings": {
+      //   "deno.enable": true,
+      //   "deno.lint": true
+      // },
       "extensions": [
-        "denoland.vscode-deno",
         "davidanson.vscode-markdownlint",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "usernamehw.errorlens",
+        "ms-python.python"
       ]
     }
   }
