@@ -2,6 +2,7 @@
 {
   "name": "Codefresh Support Package",
   "image": "mcr.microsoft.com/devcontainers/universal:3",
+  "postStartCommand": "pip install -e .",
   "customizations": {
     "vscode": {
       // "settings": {
