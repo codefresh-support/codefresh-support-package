@@ -1,11 +1,10 @@
 import click
-import importlib.metadata
 from .commands import pipelines, gitops, onprem, oss
 
 try:
-    __version__ = importlib.metadata.version("cf-support")
-except importlib.metadata.PackageNotFoundError:
-    __version__ = "0.0.0+dev"
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0+dev.uninstalled"
 
 @click.group()
 @click.version_option(version=__version__, prog_name="cf-support")

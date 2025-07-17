@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "Codefresh Support Package"
 authors = [{ name = "Codefresh Support", email = "support@codefresh.io" }]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "click>=8.1",
     "requests>=2.32"
@@ -16,3 +16,6 @@ cf-support = "cf_support.cli:cli"
 [build-system]
 requires = ["setuptools>=80.9", "setuptools_scm>=8.3"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/cf_support/_version.py"
