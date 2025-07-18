@@ -29,10 +29,13 @@ class AuthController:
                 else f"{os.getenv('HOME')}/.cfconfig"
             )
 
-            with open(config_path, "r") as config_file:
-                config = yaml.safe_load(config_file)
+            try:
+                with open(config_path, "r") as config_file:
+                    config = yaml.safe_load(config_file)
 
-            current_context = config["contexts"].get(config["current-context"])
+                current_context = config["contexts"].get(config["current-context"])
+            except (FileNotFoundError, PermissionError, yaml.YAMLError):
+                current_context = None
 
             if current_context:
                 context_token = current_context["token"]
