@@ -1,42 +1,21 @@
-import os
-import yaml
+from dotenv import load_dotenv
 import requests
+import yaml
+import sys
+import os
 
-def get_codefresh_credentials():
-    env_token = os.getenv("CF_API_KEY")
-    env_url = os.getenv("CF_URL")
 
-    if env_token and env_url:
-        return {
-            "headers": {"Authorization": env_token},
-            "base_url": f"{env_url}/api",
-        }
+load_dotenv()
 
-    config_path = (
-        f"{os.getenv('USERPROFILE')}/.cfconfig"
-        if os.name == "nt"
-        else f"{os.getenv('HOME')}/.cfconfig"
-    )
 
-    with open(config_path, "r") as config_file:
-        config = yaml.safe_load(config_file)
+# TODO: Add this when we break out the main function
+# required_env_vars: list[str] = ["CF_API_KEY", "CF_URL"]
 
-    current_context = config["contexts"].get(config["current-context"])
+# for var in required_env_vars:
+#     if not var:
+#         sys.exit(f"Environment variable {var} is not defined")
 
-    if not current_context:
-        return None
 
-    return {
-        "headers": {"Authorization": current_context["token"]},
-        "base_url": f"{current_context['url']}/api",
-    }
-
-def get_account_runtimes(cf_creds):
-    response = requests.get(
-        f"{cf_creds['base_url']}/runtime-environments",
-        headers=cf_creds["headers"],
-    )
-    return response.json()
 
 def get_runtime_spec(cf_creds, runtime):
     response = requests.get(
@@ -45,12 +24,14 @@ def get_runtime_spec(cf_creds, runtime):
     )
     return response.json()
 
+
 def get_all_accounts(cf_creds):
     response = requests.get(
         f"{cf_creds['base_url']}/admin/accounts",
         headers=cf_creds["headers"],
     )
     return response.json()
+
 
 def get_all_runtimes(cf_creds):
     response = requests.get(
@@ -59,6 +40,7 @@ def get_all_runtimes(cf_creds):
     )
     return response.json()
 
+
 def get_total_users(cf_creds):
     response = requests.get(
         f"{cf_creds['base_url']}/admin/user?limit=1&page=1",
@@ -66,6 +48,7 @@ def get_total_users(cf_creds):
     )
     users = response.json()
     return {"totalUsers": users["total"]}
+
 
 def get_system_feature_flags(cf_creds):
     response = requests.get(
