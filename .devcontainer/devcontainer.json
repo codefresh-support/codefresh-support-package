@@ -5,8 +5,9 @@
   "postCreateCommand": "pip install -e .",
   "customizations": {
     "vscode": {
-      // "settings": {
-      // },
+      "settings": {
+        "python.analysis.typeCheckingMode": "strict"
+      },
       "extensions": [
         "davidanson.vscode-markdownlint",
         "redhat.vscode-yaml",

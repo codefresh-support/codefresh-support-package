@@ -9,7 +9,8 @@ dependencies = [
     "click>=8.1",
     "kubernetes>=31.1", 
     "PyYAML>=6.0",
-    "requests>=2.32"
+    "requests>=2.32",
+    "python-dotenv>=1.1.1"
 ]
 
 [project.scripts]
