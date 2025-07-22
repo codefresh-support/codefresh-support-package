@@ -21,4 +21,4 @@ requires = ["setuptools>=80.9", "setuptools_scm[toml]>=8.3"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/cf_support/_version.py"
+write_to = "src/_version.py"

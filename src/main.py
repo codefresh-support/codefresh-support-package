@@ -1,16 +1,19 @@
-from .commands import pipelines, gitops, onprem, oss
-from .controllers.account_controller import AccountController
-from .controllers.auth_controller import AuthController
-from .controllers.runtime_controller import RuntimeController
-from .controllers.system_controller import SystemController
+from commands import pipelines, gitops, onprem, oss
+from controllers.account_controller import AccountController
+from controllers.auth_controller import AuthController
+from controllers.runtime_controller import RuntimeController
+from controllers.system_controller import SystemController
 from dotenv import load_dotenv
+from utilities.logger_config import setup_logger
 import click
 import os
 
 load_dotenv()
+logger = setup_logger(__name__)
 
 
 def main():
+    logger.info("Starting CF Support CLI")
     env_token = os.getenv("CF_API_KEY")
     env_url = os.getenv("CF_URL")
     auth_controller = AuthController(env_token, env_url)
