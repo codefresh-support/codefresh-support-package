@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cf-support = "cf_support.cli:cli"
+cf-support = "main:cli"
 
 [build-system]
 requires = ["setuptools>=80.9", "setuptools_scm[toml]>=8.3"]
