@@ -1,7 +1,6 @@
-from datetime import datetime
-from typing import Dict, List, Optional, Any
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
+from typing import Dict, Optional, Any
+from kubernetes import client, config # type: ignore
+from kubernetes.client.rest import ApiException # type: ignore
 
 
 class K8sController:
@@ -10,9 +9,9 @@ class K8sController:
         
         try:
             # Try to load in-cluster config first, then kubeconfig
-            config.load_incluster_config()
+            config.load_incluster_config() # type: ignore
         except config.ConfigException:
-            config.load_kube_config()
+            config.load_kube_config() # type: ignore
         
         self.core_api = client.CoreV1Api()
         self.apps_api = client.AppsV1Api()
@@ -23,7 +22,7 @@ class K8sController:
 
     def select_namespace(self) -> str:
         """Interactive namespace selection."""
-        namespaces = [ns.metadata.name for ns in self.core_api.list_namespace().items]
+        namespaces: list[str] = [ns.metadata.name for ns in self.core_api.list_namespace().items] # type: ignore
         
         for index, namespace in enumerate(namespaces, 1):
             print(f"{index}. {namespace}")
@@ -44,15 +43,10 @@ class K8sController:
         namespace = pod['metadata']['namespace']
         containers = [container['name'] for container in pod['spec']['containers']]
         
-        logs = {}
+        logs: Dict[str, str] = {}
         for container in containers:
             try:
-                logs[container] = self.core_api.read_namespaced_pod_log(
-                    name=pod_name,
-                    namespace=namespace,
-                    container=container,
-                    timestamps=True
-                )
+                logs[container] = self.core_api.read_namespaced_pod_log(name=pod_name, namespace=namespace, container=container, timestamps=True ) # type: ignore
             except ApiException as error:
                 logs[container] = str(error)
         
@@ -95,27 +89,28 @@ class K8sController:
         
         return events
 
-    def get_resources(self, namespace: str) -> Dict[str, callable]:
-        """Get dictionary of Kubernetes resource fetching functions."""
+    def fetch_all_resources(self, namespace: str) -> Dict[str, Any]:
+        """Fetch all Kubernetes resources for a namespace."""
+
         k8s_resource_types = {
-            'configmaps': lambda: self.core_api.list_namespaced_config_map(namespace),
-            'cronjobs.batch': lambda: self.batch_api.list_namespaced_cron_job(namespace),
-            'daemonsets.apps': lambda: self.apps_api.list_namespaced_daemon_set(namespace),
-            'deployments.apps': lambda: self.apps_api.list_namespaced_deployment(namespace),
-            'events.k8s.io': lambda: self._get_sorted_events(namespace),
-            'jobs.batch': lambda: self.batch_api.list_namespaced_job(namespace),
-            'nodes': lambda: self.core_api.list_node(),
-            'pods': lambda: self.core_api.list_namespaced_pod(namespace),
-            'serviceaccounts': lambda: self.core_api.list_namespaced_service_account(namespace),
-            'services': lambda: self.core_api.list_namespaced_service(namespace),
-            'statefulsets.apps': lambda: self.apps_api.list_namespaced_stateful_set(namespace),
-            'persistentvolumeclaims': lambda: self.core_api.list_namespaced_persistent_volume_claim(
+            'configmaps': lambda: self.core_api.list_namespaced_config_map(namespace), # type: ignore
+            'cronjobs.batch': lambda: self.batch_api.list_namespaced_cron_job(namespace), # type: ignore
+            'daemonsets.apps': lambda: self.apps_api.list_namespaced_daemon_set(namespace), # type: ignore
+            'deployments.apps': lambda: self.apps_api.list_namespaced_deployment(namespace), # type: ignore
+            'events.k8s.io': lambda: self._get_sorted_events(namespace), # type: ignore
+            'jobs.batch': lambda: self.batch_api.list_namespaced_job(namespace), # type: ignore
+            'nodes': lambda: self.core_api.list_node(), # type: ignore
+            'pods': lambda: self.core_api.list_namespaced_pod(namespace), # type: ignore
+            'serviceaccounts': lambda: self.core_api.list_namespaced_service_account(namespace), # type: ignore
+            'services': lambda: self.core_api.list_namespaced_service(namespace), # type: ignore
+            'statefulsets.apps': lambda: self.apps_api.list_namespaced_stateful_set(namespace), # type: ignore
+            'persistentvolumeclaims': lambda: self.core_api.list_namespaced_persistent_volume_claim( # type: ignore
                 namespace, label_selector='io.codefresh.accountName'
             ),
-            'persistentvolumes': lambda: self.core_api.list_persistent_volume(
+            'persistentvolumes': lambda: self.core_api.list_persistent_volume( # type: ignore
                 label_selector='io.codefresh.accountName'
             ),
-            'storageclasses.storage.k8s.io': lambda: self.storage_api.list_storage_class(),
+            'storageclasses.storage.k8s.io': lambda: self.storage_api.list_storage_class(), # type: ignore
             
             # Codefresh CRDs
             'products.codefresh.io': lambda: self._get_crd('products.codefresh.io', namespace),
@@ -136,20 +131,13 @@ class K8sController:
             'rollouts.argoproj.io': lambda: self._get_crd('rollouts.argoproj.io', namespace),
             'sensors.argoproj.io': lambda: self._get_crd('sensors.argoproj.io', namespace),
         }
-        
-        return k8s_resource_types
-
-    def fetch_all_resources(self, namespace: str) -> Dict[str, Any]:
-        """Fetch all Kubernetes resources for a namespace."""
         resources = {}
-        resource_functions = self.get_resources(namespace)
         
-        for resource_type, fetch_func in resource_functions.items():
+        for resource_type, fetch_func in k8s_resource_types.items():
             try:
                 print(f"Fetching {resource_type}...")
                 resources[resource_type] = fetch_func()
             except ApiException as e:
-                print(f"Failed to fetch {resource_type}: {e}")
                 resources[resource_type] = None
         
         return resources
