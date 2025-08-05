@@ -3,7 +3,7 @@ import { preparePackage, processData, writeYaml } from './logic/core.js';
 import { getAccountRuntimes, getCodefreshCredentials, getRuntimeSpec } from './logic/codefresh.js';
 
 export async function pipelines(namespace, runtime) {
-    const dirPath = `./cf-support-pipelines-${Math.floor(Date.now() / 1000)}`;
+    const dirPath = `./cf-support-pipelines-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\..*Z/, 'Z')}`;
     const cfCreds = getCodefreshCredentials();
 
     if (!namespace) {

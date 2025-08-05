@@ -2,7 +2,7 @@ import { getResources, selectNamespace } from './logic/k8s.js';
 import { preparePackage, processData } from './logic/core.js';
 
 export async function oss(namespace) {
-    const dirPath = `./cf-support-oss-${Math.floor(Date.now() / 1000)}`;
+    const dirPath = `./cf-support-oss-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\..*Z/, 'Z')}`;
 
     if (!namespace) {
         const selected = await selectNamespace();
