@@ -9,7 +9,7 @@ import {
 } from './logic/codefresh.js';
 
 export async function onprem(namespace) {
-    const dirPath = `./cf-support-onprem-${Math.floor(Date.now() / 1000)}`;
+    const dirPath = `./cf-support-onprem-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
     const cfCreds = getCodefreshCredentials();
 

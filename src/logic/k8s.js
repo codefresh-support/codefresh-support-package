@@ -69,11 +69,16 @@ async function getCrd(type, namespace) {
 }
 
 async function getSortedEvents(namespace) {
-    const events = await coreApi.namespace(namespace).getEventList();
-    events.items = events.items.sort((a, b) =>
-        new Date(a.metadata.creationTimestamp) - new Date(b.metadata.creationTimestamp)
-    );
-    return events;
+    try {
+        const events = await coreApi.namespace(namespace).getEventList();
+        events.items = events.items.sort((a, b) =>
+            new Date(a.metadata.creationTimestamp) - new Date(b.metadata.creationTimestamp)
+        );
+        return events;
+    } catch (error) {
+        console.warn(`Failed to fetch events: ${error.message}`);
+        return { items: [] }; // Return empty events list
+    }
 }
 
 export function getResources(namespace) {
