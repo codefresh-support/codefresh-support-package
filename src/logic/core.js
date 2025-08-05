@@ -34,67 +34,72 @@ export async function processData(dirPath, k8sResources) {
     console.log('Processing and Saving Data');
 
     for (const [k8sType, fetcher] of Object.entries(k8sResources)) {
-        const resources = await fetcher();
+        try {
+            console.log(`Processing Data for ${k8sType}`);
+            const resources = await fetcher();
 
-        if (!resources) {
-            continue;
-        }
+            if (!resources || !resources.items || resources.items.length === 0) {
+                continue;
+            }
 
-        const semaphore = getSemaphore(k8sType, 10);
-        console.log(`Processing Data for ${k8sType}`);
+            const semaphore = getSemaphore(k8sType, 10);
 
-        if (k8sType == 'pods') {
-            for (const pod of resources.items) {
+            if (k8sType == 'pods') {
+                for (const pod of resources.items) {
+                    await semaphore.acquire();
+                    try {
+                        delete pod.metadata.managedFields;
+
+                        await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
+
+                        const logs = await getPodLogs(pod);
+                        console.log(`Gathering logs for pod ${pod.metadata.name}`);
+                        for (const [containerName, logData] of Object.entries(logs)) {
+                            await Deno.writeTextFile(
+                                `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
+                                logData,
+                            );
+                        }
+                    } finally {
+                        semaphore.release();
+                    }
+                }
+                continue;
+            }
+
+            if (k8sType == 'events.k8s.io') {
+                const formattedEvents = resources.items.map((event) => {
+                    const lastSeen = event.metadata.creationTimestamp
+                        ? new Date(event.metadata.creationTimestamp).toISOString()
+                        : 'Invalid Date';
+                    const type = event.type || 'Unknown';
+                    const reason = event.reason || 'Unknown';
+                    const object = `${event.involvedObject.kind}/${event.involvedObject.name}`;
+                    const message = event.message || 'No message';
+
+                    return `${lastSeen}\t${type}\t${reason}\t${object}\t${message}`;
+                });
+
+                const header = 'LAST SEEN\tTYPE\tREASON\tOBJECT\tMESSAGE\n';
+                const content = header + formattedEvents.join('\n');
+
+                await Deno.writeTextFile(`${dirPath}/${k8sType}.csv`, content);
+
+                continue;
+            }
+
+            await Promise.all(resources.items.map(async (data) => {
                 await semaphore.acquire();
                 try {
-                    delete pod.metadata.managedFields;
-
-                    await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
-
-                    const logs = await getPodLogs(pod);
-                    console.log(`Gathering logs for pod ${pod.metadata.name}`);
-                    for (const [containerName, logData] of Object.entries(logs)) {
-                        await Deno.writeTextFile(
-                            `${dirPath}/${k8sType}/${pod.metadata.name}/log_${containerName}.log`,
-                            logData,
-                        );
-                    }
+                    delete data.metadata.managedFields;
+                    await writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);
                 } finally {
                     semaphore.release();
                 }
-            }
+            }));
+        } catch (error) {
+            console.warn(`Failed to fetch ${k8sType}: ${error.message}`);
             continue;
         }
-
-        if (k8sType == 'events.k8s.io') {
-            const formattedEvents = resources.items.map((event) => {
-                const lastSeen = event.metadata.creationTimestamp
-                    ? new Date(event.metadata.creationTimestamp).toISOString()
-                    : 'Invalid Date';
-                const type = event.type || 'Unknown';
-                const reason = event.reason || 'Unknown';
-                const object = `${event.involvedObject.kind}/${event.involvedObject.name}`;
-                const message = event.message || 'No message';
-
-                return `${lastSeen}\t${type}\t${reason}\t${object}\t${message}`;
-            });
-
-            const header = 'LAST SEEN\tTYPE\tREASON\tOBJECT\tMESSAGE\n';
-            const content = header + formattedEvents.join('\n');
-
-            await Deno.writeTextFile(`${dirPath}/${k8sType}.csv`, content);
-
-            continue;
-        }
-
-        await Promise.all(resources.items.map(async (data) => {
-            await semaphore.acquire();
-            try {
-                delete data.metadata.managedFields;
-                await writeYaml(data, `${data.metadata.name}_get`, `${dirPath}/${k8sType}`);
-            } finally {
-                semaphore.release();
-            }
-        }));
     }
 }
