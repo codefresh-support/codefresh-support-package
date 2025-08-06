@@ -24,6 +24,7 @@ build/
 
 # Logs
 *.log
+logs/
 
 # ignore env
 .env
