@@ -1,12 +1,13 @@
-import { getResources, selectNamespace } from './logic/k8s.js';
-import { preparePackage, processData, writeYaml } from './logic/core.js';
-import { getAccountRuntimes, getCodefreshCredentials, getRuntimeSpec } from './logic/codefresh.js';
+import { getResources, selectNamespace } from '../logic/k8s.js';
+import { preparePackage, processData, writeYaml } from '../logic/core.js';
+import { Codefresh } from '../logic/mod.ts';
 
 export async function pipelinesCMD(namespace, runtime) {
+    const cf = Codefresh()
     const dirPath = `./cf-support-pipelines-${
         new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')
     }`;
-    const cfCreds = getCodefreshCredentials();
+    const cfCreds = cf.getCredentials();
 
     if (!namespace) {
         const selected = await selectNamespace();
@@ -15,7 +16,7 @@ export async function pipelinesCMD(namespace, runtime) {
 
     if (cfCreds) {
         if (!runtime) {
-            const runtimes = await getAccountRuntimes(cfCreds);
+            const runtimes = await cf.getAccountRuntimes(cfCreds);
 
             if (runtimes.length !== 0) {
                 runtimes.forEach((re, index) => {
@@ -35,7 +36,7 @@ export async function pipelinesCMD(namespace, runtime) {
                 await writeYaml(reSpec, 'Runtime_Spec', dirPath);
             }
         } else {
-            const reSpec = await getRuntimeSpec(cfCreds, runtime);
+            const reSpec = await cf.getRuntimeSpec(cfCreds, runtime);
             await writeYaml(reSpec, 'Runtime_Spec', dirPath);
         }
     }

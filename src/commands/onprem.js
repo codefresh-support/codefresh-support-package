@@ -1,17 +1,12 @@
-import { getResources, selectNamespace } from './logic/k8s.js';
-import { preparePackage, processData, writeYaml } from './logic/core.js';
-import {
-    getAllAccounts,
-    getAllRuntimes,
-    getCodefreshCredentials,
-    getSystemFeatureFlags,
-    getTotalUsers,
-} from './logic/codefresh.js';
+import { getResources, selectNamespace } from '../logic/k8s.js';
+import { preparePackage, processData, writeYaml } from '../logic/core.js';
+import { Codefresh } from '../logic/mod.ts';
 
 export async function onpremCMD(namespace) {
+    const cf = Codefresh()
     const dirPath = `./cf-support-onprem-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
-    const cfCreds = getCodefreshCredentials();
+    const cfCreds = cf.getCredentials();
 
     if (cfCreds && cfCreds.baseUrl === 'https://g.codefresh.io/api') {
         console.log(
@@ -28,10 +23,10 @@ export async function onpremCMD(namespace) {
 
     if (cfCreds) {
         const dataFetchers = [
-            { name: 'OnPrem_Accounts', fetcher: getAllAccounts },
-            { name: 'OnPrem_Runtimes', fetcher: getAllRuntimes },
-            { name: 'OnPrem_Feature_Flags', fetcher: getSystemFeatureFlags },
-            { name: 'OnPrem_Total_Users', fetcher: getTotalUsers },
+            { name: 'OnPrem_Accounts', fetcher: cf.getSystemAccounts },
+            { name: 'OnPrem_Runtimes', fetcher: cf.getSystemRuntimes },
+            { name: 'OnPrem_Feature_Flags', fetcher: cf.getSystemFeatureFlags },
+            { name: 'OnPrem_Total_Users', fetcher: cf.getSystemTotalUsers },
         ];
 
         for (const { name, fetcher } of dataFetchers) {
