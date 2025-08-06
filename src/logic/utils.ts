@@ -2,20 +2,20 @@ import { stringify as toYaml } from '@std/yaml';
 import { K8s } from './mod.ts';
 import { getSemaphore } from '@henrygd/semaphore';
 
-export async function writeYaml(data, name, dirPath) {
+export async function writeYaml(data: any, name: string, dirPath: string) {
     await Deno.mkdir(dirPath, { recursive: true });
     const filePath = `${dirPath}/${name}.yaml`;
     await Deno.writeTextFile(filePath, toYaml(data, { skipInvalid: true }));
 }
 
-export async function preparePackage(dirPath) {
+export async function preparePackage(dirPath: string) {
     try {
         const supportPackageZip = `${dirPath}.tar.gz`;
         console.log('Preparing the Support Package');
         const command = new Deno.Command('tar', {
             args: ['-czf', supportPackageZip, dirPath],
         });
-        const { code, _stdout, stderr } = await command.output();
+        const { code, stderr } = await command.output();
 
         if (code !== 0) {
             console.error(new TextDecoder().decode(stderr));
@@ -30,9 +30,9 @@ export async function preparePackage(dirPath) {
     }
 }
 
-export async function processData(dirPath, k8sResources) {
+export async function processData(dirPath: string, k8sResources: any) {
     console.log('Processing and Saving Data');
-    const k8s = K8s();
+    const k8s = new K8s();
 
     for (const [k8sType, fetcher] of Object.entries(k8sResources)) {
         try {
@@ -69,7 +69,7 @@ export async function processData(dirPath, k8sResources) {
             }
 
             if (k8sType == 'events.k8s.io') {
-                const formattedEvents = resources.items.map((event) => {
+                const formattedEvents = resources.items.map((event: any) => {
                     const lastSeen = event.metadata.creationTimestamp
                         ? new Date(event.metadata.creationTimestamp).toISOString()
                         : 'Invalid Date';
@@ -89,7 +89,7 @@ export async function processData(dirPath, k8sResources) {
                 continue;
             }
 
-            await Promise.all(resources.items.map(async (data) => {
+            await Promise.all(resources.items.map(async (data: any) => {
                 await semaphore.acquire();
                 try {
                     delete data.metadata.managedFields;
@@ -99,8 +99,12 @@ export async function processData(dirPath, k8sResources) {
                 }
             }));
         } catch (error) {
-            console.warn(`Failed to fetch ${k8sType}: ${error.message}`);
-            continue;
+            if (error instanceof Error) {
+                console.warn(`Failed to fetch ${k8sType}: ${error.message}`);
+                continue;
+            } else {
+                continue
+            }
         }
     }
 }

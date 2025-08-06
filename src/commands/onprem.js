@@ -1,9 +1,9 @@
-import { preparePackage, processData, writeYaml } from '../logic/core.js';
+import { preparePackage, processData, writeYaml } from '../logic/utils.ts';
 import { Codefresh, K8s } from '../logic/mod.ts';
 
 export async function onpremCMD(namespace) {
-    const cf = Codefresh();
-    const k8s = K8s();
+    const cf = new Codefresh();
+    const k8s = new K8s();
     const dirPath = `./cf-support-onprem-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
     const cfCreds = cf.getCredentials();

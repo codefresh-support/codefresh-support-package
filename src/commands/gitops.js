@@ -1,8 +1,8 @@
-import { preparePackage, processData } from '../logic/core.js';
+import { preparePackage, processData } from '../logic/utils.ts';
 import { K8s } from '../logic/mod.ts';
 
 export async function gitopsCMD(namespace) {
-    const k8s = K8s();
+    const k8s = new K8s();
     const dirPath = `./cf-support-gitops-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
     if (!namespace) {
