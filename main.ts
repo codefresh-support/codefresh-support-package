@@ -5,7 +5,7 @@ await new Command()
     .name('cf-support')
     .version('__APP_VERSION__')
     .description('Tool to gather information for Codefresh Support')
-    .action(function () {
+    .action(function (this: Command) {
         this.showHelp();
     })
     .command(
@@ -15,7 +15,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the GitOps Runtime is installed', {
                 required: false,
             })
-            .action((options) => {
+            .action((options: { namespace: string; }) => {
                 cmd.gitops(options.namespace);
             }),
     )
@@ -27,7 +27,7 @@ await new Command()
                 required: false,
             })
             .option('-r, --runtime <runtime:string>', 'The name of the Pipelines Runtime', { required: false })
-            .action((options) => {
+            .action((options: { namespace: string; runtime: string; }) => {
                 cmd.pipelines(options.namespace, options.runtime);
             }),
     )
@@ -38,7 +38,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where Codefresh OnPrem is installed', {
                 required: false,
             })
-            .action((options) => {
+            .action((options: { namespace: string; }) => {
                 cmd.onprem(options.namespace);
             }),
     )
@@ -49,7 +49,7 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the OSS ArgoCD is installed', {
                 required: false,
             })
-            .action((options) => {
+            .action((options: { namespace: string; }) => {
                 cmd.oss(options.namespace);
             }),
     )
