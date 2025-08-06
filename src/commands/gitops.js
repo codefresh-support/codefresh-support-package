@@ -1,7 +1,7 @@
-import { getResources, selectNamespace } from './logic/k8s.js';
-import { preparePackage, processData } from './logic/core.js';
+import { getResources, selectNamespace } from '../logic/k8s.js';
+import { preparePackage, processData } from '../logic/core.js';
 
-export async function gitops(namespace) {
+export async function gitopsCMD(namespace) {
     const dirPath = `./cf-support-gitops-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
     if (!namespace) {

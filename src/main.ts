@@ -1,5 +1,5 @@
 import { Command } from '@cliffy/command';
-import * as cmd from './src/index.js';
+import { gitopsCMD, onpremCMD, ossCMD, pipelinesCMD } from './commands/mod.ts';
 
 await new Command()
     .name('cf-support')
@@ -15,8 +15,8 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the GitOps Runtime is installed', {
                 required: false,
             })
-            .action((options: { namespace: string; }) => {
-                cmd.gitops(options.namespace);
+            .action((options: { namespace: string }) => {
+                gitopsCMD(options.namespace);
             }),
     )
     .command(
@@ -27,8 +27,8 @@ await new Command()
                 required: false,
             })
             .option('-r, --runtime <runtime:string>', 'The name of the Pipelines Runtime', { required: false })
-            .action((options: { namespace: string; runtime: string; }) => {
-                cmd.pipelines(options.namespace, options.runtime);
+            .action((options: { namespace: string; runtime: string }) => {
+                pipelinesCMD(options.namespace, options.runtime);
             }),
     )
     .command(
@@ -38,8 +38,8 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where Codefresh OnPrem is installed', {
                 required: false,
             })
-            .action((options: { namespace: string; }) => {
-                cmd.onprem(options.namespace);
+            .action((options: { namespace: string }) => {
+                onpremCMD(options.namespace);
             }),
     )
     .command(
@@ -49,8 +49,8 @@ await new Command()
             .option('-n, --namespace <namespace:string>', 'The namespace where the OSS ArgoCD is installed', {
                 required: false,
             })
-            .action((options: { namespace: string; }) => {
-                cmd.oss(options.namespace);
+            .action((options: { namespace: string }) => {
+                ossCMD(options.namespace);
             }),
     )
     .parse(Deno.args);
