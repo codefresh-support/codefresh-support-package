@@ -1,5 +1,5 @@
 import { stringify as toYaml } from '@std/yaml';
-import { getPodLogs } from './k8s.js';
+import { K8s } from './mod.ts';
 import { getSemaphore } from '@henrygd/semaphore';
 
 export async function writeYaml(data, name, dirPath) {
@@ -32,6 +32,7 @@ export async function preparePackage(dirPath) {
 
 export async function processData(dirPath, k8sResources) {
     console.log('Processing and Saving Data');
+    const k8s = K8s();
 
     for (const [k8sType, fetcher] of Object.entries(k8sResources)) {
         try {
@@ -52,7 +53,7 @@ export async function processData(dirPath, k8sResources) {
 
                         await writeYaml(pod, `spec_${pod.metadata.name}`, `${dirPath}/${k8sType}/${pod.metadata.name}`);
 
-                        const logs = await getPodLogs(pod);
+                        const logs = await k8s.getPodLogs(pod);
                         console.log(`Gathering logs for pod ${pod.metadata.name}`);
                         for (const [containerName, logData] of Object.entries(logs)) {
                             await Deno.writeTextFile(

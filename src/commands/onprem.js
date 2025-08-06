@@ -1,9 +1,9 @@
-import { getResources, selectNamespace } from '../logic/k8s.js';
 import { preparePackage, processData, writeYaml } from '../logic/core.js';
-import { Codefresh } from '../logic/mod.ts';
+import { Codefresh, K8s } from '../logic/mod.ts';
 
 export async function onpremCMD(namespace) {
-    const cf = Codefresh()
+    const cf = Codefresh();
+    const k8s = K8s();
     const dirPath = `./cf-support-onprem-${new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')}`;
 
     const cfCreds = cf.getCredentials();
@@ -17,7 +17,7 @@ export async function onpremCMD(namespace) {
     }
 
     if (!namespace) {
-        const selected = await selectNamespace();
+        const selected = await k8s.selectNamespace();
         namespace = selected;
     }
 
@@ -40,7 +40,7 @@ export async function onpremCMD(namespace) {
     }
 
     console.log(`Gathering data in the '${namespace}' namespace for Codefresh OnPrem`);
-    const k8sResources = getResources(namespace);
+    const k8sResources = k8s.getResources(namespace);
     await processData(dirPath, k8sResources);
     await preparePackage(dirPath);
 }

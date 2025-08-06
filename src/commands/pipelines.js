@@ -1,16 +1,16 @@
-import { getResources, selectNamespace } from '../logic/k8s.js';
 import { preparePackage, processData, writeYaml } from '../logic/core.js';
-import { Codefresh } from '../logic/mod.ts';
+import { Codefresh, K8s } from '../logic/mod.ts';
 
 export async function pipelinesCMD(namespace, runtime) {
-    const cf = Codefresh()
+    const cf = Codefresh();
+    const k8s = K8s();
     const dirPath = `./cf-support-pipelines-${
         new Date().toISOString().replace(/[:.]/g, '-').replace(/\.\d{3}Z$/, 'Z')
     }`;
     const cfCreds = cf.getCredentials();
 
     if (!namespace) {
-        const selected = await selectNamespace();
+        const selected = await k8s.selectNamespace();
         namespace = selected;
     }
 
@@ -42,7 +42,7 @@ export async function pipelinesCMD(namespace, runtime) {
     }
 
     console.log(`Gathering data in the '${namespace}' namespace for Pipelines Runtime`);
-    const k8sResources = getResources(namespace);
+    const k8sResources = k8s.getResources(namespace);
     await processData(dirPath, k8sResources);
     await preparePackage(dirPath);
 }
