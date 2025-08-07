@@ -39,7 +39,7 @@ class Codefresh:
                         "headers": {"Authorization": current_context["token"]},
                         "base_url": f"{current_context['url']}/api",
                     }
-        except (FileNotFoundError, KeyError, yaml.YAMLError):
+        except:
             pass
 
         return cf_creds

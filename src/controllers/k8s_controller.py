@@ -1,143 +1,205 @@
-from typing import Dict, Optional, Any
-from kubernetes import client, config # type: ignore
-from kubernetes.client.rest import ApiException # type: ignore
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
+from datetime import datetime
+from utilities.logger_config import setup_logger
+
+logger = setup_logger(__name__)
 
 
-class K8sController:
+class K8s:
     def __init__(self):
-        """Initialize Kubernetes client with auto-detected configuration."""
-        
+        logger.debug(f"{self.__class__.__name__} initialized")
+        # Load kubeconfig
         try:
-            # Try to load in-cluster config first, then kubeconfig
-            config.load_incluster_config() # type: ignore
-        except config.ConfigException:
-            config.load_kube_config() # type: ignore
-        
-        self.core_api = client.CoreV1Api()
-        self.apps_api = client.AppsV1Api()
-        self.batch_api = client.BatchV1Api()
-        self.storage_api = client.StorageV1Api()
-        self.crd_api = client.ApiextensionsV1Api()
-        self.custom_objects_api = client.CustomObjectsApi()
+            config.load_kube_config()
+        except:
+            # Fallback to in-cluster config if kubeconfig not available
+            config.load_incluster_config()
 
-    def select_namespace(self) -> str:
-        """Interactive namespace selection."""
-        namespaces: list[str] = [ns.metadata.name for ns in self.core_api.list_namespace().items] # type: ignore
-        
-        for index, namespace in enumerate(namespaces, 1):
-            print(f"{index}. {namespace}")
-        
-        while True:
-            try:
-                selection = int(input('\nWhich Namespace are we using? (Number): '))
-                if 1 <= selection <= len(namespaces):
-                    return namespaces[selection - 1]
-                else:
-                    print('Invalid selection. Please enter a number corresponding to one of the listed namespaces.')
-            except ValueError:
-                print('Invalid selection. Please enter a number corresponding to one of the listed namespaces.')
+        self.appsApi = client.AppsV1Api()
+        self.batchApi = client.BatchV1Api()
+        self.coreApi = client.CoreV1Api()
+        self.crdApi = client.CustomObjectsApi()
+        self.apiExtensions = client.ApiextensionsV1Api()
+        self.storageApi = client.StorageV1Api()
 
-    def get_pod_logs(self, pod: Dict[str, Any]) -> Dict[str, str]:
-        """Get logs for all containers in a pod."""
-        pod_name = pod['metadata']['name']
-        namespace = pod['metadata']['namespace']
-        containers = [container['name'] for container in pod['spec']['containers']]
-        
-        logs: Dict[str, str] = {}
+    def select_namespace(self):
+        logger.info(f"{self.__class__.__name__} Interactive namespace selection")
+        try:
+            namespaces_response = self.coreApi.list_namespace()
+            namespaces = [ns.metadata.name for ns in namespaces_response.items]
+
+            for index, namespace in enumerate(namespaces):
+                print(f"{index + 1}. {namespace}")
+
+            while True:
+                try:
+                    selection = int(input("\nWhich Namespace are we using? (Number): "))
+                    if 1 <= selection <= len(namespaces):
+                        return namespaces[selection - 1]
+                    else:
+                        print(
+                            "Invalid selection. Please enter a number corresponding to one of the listed namespaces."
+                        )
+                except ValueError:
+                    print(
+                        "Invalid selection. Please enter a number corresponding to one of the listed namespaces."
+                    )
+
+        except ApiException as error:
+            print(f"Error fetching namespaces: {error}")
+            raise
+
+    def get_pod_logs(self, pod):
+        logger.info(f"{self.__class__.__name__} Get logs from all containers in a pod")
+        pod_name = pod.metadata.name
+        namespace = pod.metadata.namespace
+        containers = [container.name for container in pod.spec.containers]
+        logs = {}
+
         for container in containers:
             try:
-                logs[container] = self.core_api.read_namespaced_pod_log(name=pod_name, namespace=namespace, container=container, timestamps=True ) # type: ignore
+                log_response = self.coreApi.read_namespaced_pod_log(
+                    name=pod_name,
+                    namespace=namespace,
+                    container=container,
+                    timestamps=True,
+                )
+                logs[container] = log_response
             except ApiException as error:
-                logs[container] = str(error)
-        
+                logs[container] = f"Error: {str(error)}"
+
         return logs
 
-    def _get_crd(self, crd_type: str, namespace: str) -> Optional[Dict[str, Any]]:
-        """Get Custom Resource Definition objects."""
+    def get_crd(self, crd_type, namespace):
+        logger.info(
+            f"{self.__class__.__name__} Get custom resource definition objects for {crd_type}"
+        )
         try:
-            crd = self.crd_api.read_custom_resource_definition(crd_type)
-            
-            # Find served version
-            served_version = next(
-                (v.name for v in crd.spec.versions if v.served), 
-                None
-            )
-            
-            if not served_version:
-                return None
-            
-            # Get custom resources
-            response = self.custom_objects_api.list_namespaced_custom_object(
+            # Get the CRD definition
+            crd = self.apiExtensions.read_custom_resource_definition(crd_type)
+
+            # Find the served version
+            served_version = None
+            for version in crd.spec.versions:
+                if version.served:
+                    served_version = version.name
+                    break
+
+            # Get custom resources using the CustomObjectsApi
+            crd_List = self.crdApi.list_namespaced_custom_object(
                 group=crd.spec.group,
                 version=served_version,
                 namespace=namespace,
-                plural=crd.spec.names.plural
+                plural=crd.spec.names.plural,
             )
-            
-            return response
-        except ApiException:
+
+            return crd_List
+
+        except:
             return None
 
-    def _get_sorted_events(self, namespace: str) -> client.V1EventList:
-        """Get events sorted by creation timestamp."""
-        events = self.core_api.list_namespaced_event(namespace)
-        
-        # Sort events by creation timestamp
-        events.items.sort(
-            key=lambda event: event.metadata.creation_timestamp
+    def get_sorted_events(self, namespace):
+        logger.info(
+            f"{self.__class__.__name__} Get events sorted by creation timestamp"
         )
-        
-        return events
+        try:
+            events = self.coreApi.list_namespaced_event(namespace=namespace)
 
-    def fetch_all_resources(self, namespace: str) -> Dict[str, Any]:
-        """Fetch all Kubernetes resources for a namespace."""
+            # Sort events by creation timestamp
+            events.items.sort(
+                key=lambda event: (event.metadata.creation_timestamp or datetime.min)
+            )
 
+            return events
+
+        except:
+            return None
+
+    def get_resources(self, namespace):
+        logger.info(
+            f"{self.__class__.__name__} Get dictionary of resource types and their corresponding API calls"
+        )
         k8s_resource_types = {
-            'configmaps': lambda: self.core_api.list_namespaced_config_map(namespace), # type: ignore
-            'cronjobs.batch': lambda: self.batch_api.list_namespaced_cron_job(namespace), # type: ignore
-            'daemonsets.apps': lambda: self.apps_api.list_namespaced_daemon_set(namespace), # type: ignore
-            'deployments.apps': lambda: self.apps_api.list_namespaced_deployment(namespace), # type: ignore
-            'events.k8s.io': lambda: self._get_sorted_events(namespace), # type: ignore
-            'jobs.batch': lambda: self.batch_api.list_namespaced_job(namespace), # type: ignore
-            'nodes': lambda: self.core_api.list_node(), # type: ignore
-            'pods': lambda: self.core_api.list_namespaced_pod(namespace), # type: ignore
-            'serviceaccounts': lambda: self.core_api.list_namespaced_service_account(namespace), # type: ignore
-            'services': lambda: self.core_api.list_namespaced_service(namespace), # type: ignore
-            'statefulsets.apps': lambda: self.apps_api.list_namespaced_stateful_set(namespace), # type: ignore
-            'persistentvolumeclaims': lambda: self.core_api.list_namespaced_persistent_volume_claim( # type: ignore
-                namespace, label_selector='io.codefresh.accountName'
+            "configmaps": lambda: self.coreApi.list_namespaced_config_map(
+                namespace=namespace
             ),
-            'persistentvolumes': lambda: self.core_api.list_persistent_volume( # type: ignore
-                label_selector='io.codefresh.accountName'
+            "cronjobs.batch": lambda: self.batchApi.list_namespaced_cron_job(
+                namespace=namespace
             ),
-            'storageclasses.storage.k8s.io': lambda: self.storage_api.list_storage_class(), # type: ignore
-            
-            # Codefresh CRDs
-            'products.codefresh.io': lambda: self._get_crd('products.codefresh.io', namespace),
-            'promotionflows.codefresh.io': lambda: self._get_crd('promotionflows.codefresh.io', namespace),
-            'promotionpolicies.codefresh.io': lambda: self._get_crd('promotionpolicies.codefresh.io', namespace),
-            'promotiontemplates.codefresh.io': lambda: self._get_crd('promotiontemplates.codefresh.io', namespace),
-            'restrictedgitsources.codefresh.io': lambda: self._get_crd('restrictedgitsources.codefresh.io', namespace),
-            
-            # ArgoProj CRDs
-            'analysisruns.argoproj.io': lambda: self._get_crd('analysisruns.argoproj.io', namespace),
-            'analysistemplates.argoproj.io': lambda: self._get_crd('analysistemplates.argoproj.io', namespace),
-            'applications.argoproj.io': lambda: self._get_crd('applications.argoproj.io', namespace),
-            'applicationsets.argoproj.io': lambda: self._get_crd('applicationsets.argoproj.io', namespace),
-            'appprojects.argoproj.io': lambda: self._get_crd('appprojects.argoproj.io', namespace),
-            'eventbus.argoproj.io': lambda: self._get_crd('eventbus.argoproj.io', namespace),
-            'eventsources.argoproj.io': lambda: self._get_crd('eventsources.argoproj.io', namespace),
-            'experiments.argoproj.io': lambda: self._get_crd('experiments.argoproj.io', namespace),
-            'rollouts.argoproj.io': lambda: self._get_crd('rollouts.argoproj.io', namespace),
-            'sensors.argoproj.io': lambda: self._get_crd('sensors.argoproj.io', namespace),
+            "daemonsets.apps": lambda: self.appsApi.list_namespaced_daemon_set(
+                namespace=namespace
+            ),
+            "deployments.apps": lambda: self.appsApi.list_namespaced_deployment(
+                namespace=namespace
+            ),
+            "events.k8s.io": lambda: self.get_sorted_events(namespace),
+            "jobs.batch": lambda: self.batchApi.list_namespaced_job(
+                namespace=namespace
+            ),
+            "nodes": lambda: self.coreApi.list_node(),
+            "pods": lambda: self.coreApi.list_namespaced_pod(namespace=namespace),
+            "serviceaccounts": lambda: self.coreApi.list_namespaced_service_account(
+                namespace=namespace
+            ),
+            "services": lambda: self.coreApi.list_namespaced_service(
+                namespace=namespace
+            ),
+            "statefulsets.apps": lambda: self.appsApi.list_namespaced_stateful_set(
+                namespace=namespace
+            ),
+            "persistentvolumeclaims": lambda: self.coreApi.list_namespaced_persistent_volume_claim(
+                namespace=namespace, label_selector="io.codefresh.accountName"
+            ),
+            "persistentvolumes": lambda: self.coreApi.list_persistent_volume(
+                label_selector="io.codefresh.accountName"
+            ),
+            "storageclasses.storage.k8s.io": lambda: self.storageApi.list_storage_class(),
+            "products.codefresh.io": lambda: self.get_crd(
+                "products.codefresh.io", namespace
+            ),
+            "promotionflows.codefresh.io": lambda: self.get_crd(
+                "products.codefresh.io", namespace
+            ),
+            "promotionpolicies.codefresh.io": lambda: self.get_crd(
+                "promotionflows.codefresh.io", namespace
+            ),
+            "promotiontemplates.codefresh.io": lambda: self.get_crd(
+                "promotiontemplates.codefresh.io", namespace
+            ),
+            "restrictedgitsources.codefresh.io": lambda: self.get_crd(
+                "restrictedgitsources.codefresh.io", namespace
+            ),
+            "analysisruns.argoproj.io": lambda: self.get_crd(
+                "analysisruns.argoproj.io", namespace
+            ),
+            "analysistemplates.argoproj.io": lambda: self.get_crd(
+                "analysistemplates.argoproj.io", namespace
+            ),
+            "applications.argoproj.io": lambda: self.get_crd(
+                "applications.argoproj.io", namespace
+            ),
+            "applicationsets.argoproj.io": lambda: self.get_crd(
+                "applicationsets.argoproj.io", namespace
+            ),
+            "appprojects.argoproj.io": lambda: self.get_crd(
+                "appprojects.argoproj.io", namespace
+            ),
+            "eventbus.argoproj.io": lambda: self.get_crd(
+                "eventbus.argoproj.io", namespace
+            ),
+            "eventsources.argoproj.io": lambda: self.get_crd(
+                "eventsources.argoproj.io", namespace
+            ),
+            "experiments.argoproj.io": lambda: self.get_crd(
+                "experiments.argoproj.io", namespace
+            ),
+            "rollouts.argoproj.io": lambda: self.get_crd(
+                "rollouts.argoproj.io", namespace
+            ),
+            "sensors.argoproj.io": lambda: self.get_crd(
+                "sensors.argoproj.io", namespace
+            ),
         }
-        resources = {}
-        
-        for resource_type, fetch_func in k8s_resource_types.items():
-            try:
-                print(f"Fetching {resource_type}...")
-                resources[resource_type] = fetch_func()
-            except ApiException as e:
-                resources[resource_type] = None
-        
-        return resources
+
+        return k8s_resource_types
